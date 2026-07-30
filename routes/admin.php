@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Admin\Coach\CoachScheduleController;
 use App\Http\Controllers\User\UserAuthController;
 use App\Http\Controllers\Payment\SubscriptionController;
+use App\Http\Controllers\Product\ProductController;
 
 use Illuminate\Http\Request;
 use Spatie\Permission\Traits\HasRoles;  //for role and permission
@@ -36,6 +37,14 @@ use Illuminate\Support\Facades\Route;
         Route::get('users', [UserAuthController::class, 'index']);
         Route::post('users/{id}/update', [UserAuthController::class, 'updateTrainee']);
         Route::post('users/subscription/{id}/update', [SubscriptionController::class, 'renewSubscriptionByAdmin']);
+        
+        //product
+        Route::get('products/all', [ProductController::class, 'indexProducts']);
+        Route::get('products/show/{id}', [ProductController::class, 'showProduct']);
+        Route::post('/products/sales', [ProductController::class, 'sellProducts']);    
+        Route::get('/sales/all', [ProductController::class, 'indexSales']);
+        Route::get('/sales/{id}', [ProductController::class, 'showSale']);
+    
     });
 
     //admin only
@@ -52,18 +61,20 @@ use Illuminate\Support\Facades\Route;
             
             // تعيين جداول عمل لكوتش
             Route::post('/Staff/{user_id}', [CoachScheduleController::class, 'assignSchedule']);
-            // عرض جداول مظف او كوتش معين
             Route::get('/Staff/{user_id}', [CoachScheduleController::class, 'showStaffSchedules']);
-            //تعديل مواعبد موظف
             Route::post('/Staff/update/{user_id}', [CoachScheduleController::class, 'updateStaffSchedules']);
-        });    
-            //
-            Route::get('coachs/all', [CoachScheduleController::class, 'getCoachesList']);
-            // عرض تفاصيل كوتش محدد
-            Route::get('coaches/{id}', [CoachScheduleController::class, 'coachDetails']);
+        });  
 
-        
+        //
+        Route::get('coachs/all', [CoachScheduleController::class, 'getCoachesList']);
+        // عرض تفاصيل كوتش محدد
+        Route::get('coaches/{id}', [CoachScheduleController::class, 'coachDetails']);
 
+    
+        //add Products 
+        Route::post('products/add', [ProductController::class, 'storeProduct']);
+        Route::post('products/update/{id}', [ProductController::class, 'updateProduct']);
+        Route::delete('products/delete/{id}', [ProductController::class, 'deleteProduct']);
 
     });
 

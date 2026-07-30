@@ -23,7 +23,7 @@ return new class extends Migration
                 'paid',
                 'expired'
             ])->default('pending');
-
+            $table->String('notes')->default();
             $table->string('transaction_number')->nullable();
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('expires_at')->nullable();

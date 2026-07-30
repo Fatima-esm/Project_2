@@ -7,6 +7,7 @@ use App\Services\SubscriptionService;
 use App\Models\Plan;
 use App\Models\User;     // <--- تأكد من إضافة هذا السطر
 use App\Models\Subscription;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -133,7 +134,6 @@ class SubscriptionController extends Controller
     // تجديد اشتراك المتدرب من قبل الإدارة
     public function renewSubscriptionByAdmin(Request $request, $id)
     {
-        // 1. التحقق من الصلاحيات (أدمن أو استقبال فقط)
         if (!in_array(auth()->user()->role, ['admin', 'reception'])) {
             return response()->json(['message' => 'غير مصرح لك بالوصول'], 403);
         }
@@ -145,7 +145,8 @@ class SubscriptionController extends Controller
 
         $validator = Validator::make($request->all(), [
             'plan_id'        => 'required|exists:plans,id',
-            'payment_method' => 'required|in:cash,bank', // نقدي أو بنك
+            'payment_method' => 'required|in:cash,bank,online,card', 
+            'notes'           => 'nullable|string|max:255',
         ]);
 
         if ($validator->fails()) {
@@ -155,10 +156,9 @@ class SubscriptionController extends Controller
         DB::beginTransaction();
 
         try {
-            // جلب الخطة المطلوبة (السعر والمدة مأخوذة منها تلقائياً)
             $plan = Plan::findOrFail($request->plan_id);
 
-            // البحث عن اشتراك ساري حالي لترحيل أيامه المتبقية إن وجدت
+            // 1. فحص الاشتراك الحالي لترحيل الأيام
             $activeSub = $user->subscriptions()
                               ->where('status', 'paid')
                               ->where('expires_at', '>', now())
@@ -169,36 +169,56 @@ class SubscriptionController extends Controller
             $expiresAt = now()->addDays($plan->duration_days);
 
             if ($activeSub) {
-                // إذا كان لديه اشتراك ساري، نبدأ الاشتراك الجديد فور انتهاء القديم لكي لا تضيع أيامه
+                $daysRemainingCurrent = now()->diffInDays($activeSub->expires_at, false);
+
+                // منع التجديد إذا كان المتبقي أكثر من شهر
+                if ($daysRemainingCurrent > 30) {
+                    DB::rollBack();
+                    return response()->json([
+                        'status' => 400,
+                        'message' => "عذراً، لا يمكن التجديد الآن. المتبقي في اشتراكه الحالي {$daysRemainingCurrent} يوماً (أكثر من شهر)."
+                    ], 400);
+                }
+
                 $startsAt = $activeSub->expires_at;
                 $expiresAt = (clone $activeSub->expires_at)->addDays($plan->duration_days);
 
-                // تحديث حالة الاشتراك القديم إلى منتهي
                 $activeSub->update(['status' => 'expired']);
             }
 
-            // إنشاء الاشتراك الجديد المسدد بواسطة الإدارة
+            // 2. إنشاء سجل الاشتراك الجديد
             $subscription = Subscription::create([
                 'user_id'        => $user->id,
                 'plan_id'        => $plan->id,
-                'price'          => $plan->price, // السعر من جدول الخطة حصراً
+                'price'          => $plan->price,
                 'duration_days'  => $plan->duration_days,
                 'starts_at'      => $startsAt,
                 'expires_at'     => $expiresAt,
-                'status'         => 'paid', // مدفوع ومفعل
-                'payment_method' => $request->payment_method, // cash أو bank
+                'status'         => 'paid', 
+                'note'           => $request->note,
+            ]);
+
+            // 3. إنشاء سجل المعاملة المالية المرتبطة وتوليد رقم معاملة تلقائياً في الخلفية
+            $transaction = Transaction::create([
+                'transaction_number' => 'TRX-' . strtoupper(uniqid()),
+                'amount'             => $plan->price,
+                'user_id'            => $user->id,
+                'sender_name'        => $user->full_name,
+                'sender_phone'        => $user->phone,
+                'subscription_id'    => $subscription->id,
+                'payment_method'     => $request->payment_method,
+                'status'             => 'verified',
+                'notes'              => $request->note,
             ]);
 
             DB::commit();
 
-            // جلب بيانات المستخدم مع اشتراكه النشط الجديد لعرضها في الاستجابة
             $user->load(['activeSubscription.plan']);
-
             $daysRemaining = now()->diffInDays($expiresAt, false);
 
             return response()->json([
                 'status' => 200,
-                'message' => 'تم تجديد الاشتراك بنجاح ',
+                'message' => 'تم تجديد الاشتراك بنجاح',
                 'data' => [
                     'trainee_info' => [
                         'id'                => $user->id,
@@ -211,11 +231,12 @@ class SubscriptionController extends Controller
                         'subscription_id'   => $subscription->id,
                         'plan_name'         => $plan->name_ar ?? $plan->name,
                         'price'             => $subscription->price,
-                        'payment_method'    => $subscription->payment_method,
+                        'payment_method'    => $transaction->payment_method,
                         'status'            => $subscription->status,
                         'starts_at'         => $subscription->starts_at->format('Y-m-d'),
                         'expires_at'        => $subscription->expires_at->format('Y-m-d'),
-                        'days_remaining'    => max(0, $daysRemaining), // الأيام المتبقية بالإجمالي حتى تاريخ الانتهاء الجديد
+                        'days_remaining'    => max(0, $daysRemaining),
+                        'notes'              => $transaction->notes,
                     ]
                 ]
             ]);
@@ -229,4 +250,5 @@ class SubscriptionController extends Controller
             ], 500);
         }
     }
+
 }

@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminAuthController;
-use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ExercisesController;
 use App\Http\Controllers\ProfileController;
 
@@ -9,6 +8,8 @@ use App\Http\Controllers\Payment\PlanController;
 use App\Http\Controllers\Payment\PaymentController;
 use App\Http\Controllers\Payment\TransactionController;
 use App\Http\Controllers\Payment\SubscriptionController;
+
+use App\Http\Controllers\Product\ProductController;
 
 use App\Http\Controllers\CoachSelectionController;
 
@@ -23,9 +24,12 @@ use App\Http\Controllers\MeasurementController;
     Route::post('login',[UserAuthController::class,'login']);
     Route::post('logout', [UserAuthController::class,'logout'])->middleware('auth:sanctum,api');
 
-    Route::middleware('auth:sanctum')->get('/User', function (Request $request) {
-        return $request->user();
-    });
+    //لاجل ادخال الهدف ععند التسجيل لا تحتاج توكين
+    Route::get('/goals', [ProfileController::class, 'allGoals']);
+    Route::post('goals/select', [ProfileController::class, 'selectGoal']);
+    Route::post('/user/measurements/update', [ProfileController::class, 'addMeasurement']);
+
+
 
     require __DIR__ .'/admin.php';
 
@@ -52,6 +56,11 @@ use App\Http\Controllers\MeasurementController;
              // اختيار الكوتش (يشترط وجود اشتراك نشط)
             Route::post('/user/change-coach', [CoachSelectionController::class, 'requestChangeCoach']);
            
+            // 4. التقدم والقياسات
+            Route::get("/user/measurements", [ProfileController::class, 'getMeasurements']);
+            Route::get('/user/measurements/history', [ProfileController::class, 'getHistory']);
+
+
         });
 
     // 1. الملف الشخصي + QR Code   تم*
@@ -60,16 +69,6 @@ use App\Http\Controllers\MeasurementController;
     Route::get('/user/qr-code', [ProfileController::class, 'generateQR']);
 
 
-    // 4. التقدم والقياسات
-    Route::get("/user/measurements", [ProfileController::class, 'getMeasurements']);
-    Route::post('/user/measurements/update', [ProfileController::class, 'addMeasurement']);
-    Route::get('/user/measurements/history', [ProfileController::class, 'getHistory']);
-
-    Route::get('/goals', [ProfileController::class, 'allGoals']);
-    Route::post('goals/select', [ProfileController::class, 'selectGoal']);
-
-    // 5. الاشتراك
-    Route::get('/user/subscription', [SubscriptionController::class, 'show']);
 
 
     //.......................................................................................................
@@ -83,6 +82,10 @@ use App\Http\Controllers\MeasurementController;
     //عرض تفاصيل تمرين
     Route::get('/exercises/{id}', [ExercisesController::class, 'getExerciseDetails']);
 
+    //...............................................................................................
+    //products
+    Route::get('/Home/products', [ProductController::class, 'indexProducts']);
+    Route::get('/Home/products/show/{id}', [ProductController::class, 'showProduct']);
 
     //...........................................
 
