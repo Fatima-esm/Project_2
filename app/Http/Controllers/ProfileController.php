@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Goal;
+use App\Models\User;
+use App\Models\Measurement;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use BaconQrCode\Renderer\Image\GdImageBackEnd; // أضف هذا الـ Use
 use BaconQrCode\Renderer\ImageRenderer;
@@ -73,18 +75,41 @@ class ProfileController extends Controller
 
     public function selectGoal(Request $request)
     {
-        $request->validate(['goal_id' => 'required|exists:goals,id']);
+        {
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|exists:users,id',
+            'goal_id' => 'required|exists:goals,id',
+        ]);
 
-        $user = $request->user();
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $user = User::find($request->user_id);
+
+        // حماية بسيطة: لا تسمح بتعديل حسابات الأدمن أو الكوتش بهذه الطريقة
+        if (in_array($user->role, ['admin', 'reception'])) {
+            return response()->json([
+                'message' => 'غير مسموح'
+            ], 403);
+        }
+
         $user->goal_id = $request->goal_id;
         $user->save();
 
+        $user->load('goal');
+
         return response()->json([
-            'status' => 201,
-            'message' => 'تم حفظ هدفك الرياضي بنجاح',
-            'user_id' => $user->id,
-            'goal' => $request->user()->goal ,
-            ]);
+            'status'  => 200,
+            'message' => 'تم حفظ الهدف بنجاح',
+            'data' => [
+                'user_id' => $user->id,
+                'goal'    => $user->goal,
+                'has_goal' => true,
+                'has_measurements' => $user->measurements()->exists()
+            ]
+        ]);
+        }
      }
 
     //..............................................................تم
@@ -103,25 +128,44 @@ class ProfileController extends Controller
     //تعديل او اضافة قياسات
     public function addMeasurement(Request $request)
     {
-        $request->validate([
-            'height' => 'required|numeric|min:100|max:250',
-            'weight' => 'required|numeric|min:30|max:300',
+        $validator = Validator::make($request->all(), [
+            'user_id'        => 'required|exists:users,id',
+            'height'         => 'required|numeric|min:100|max:250',
+            'weight'         => 'required|numeric|min:30|max:300',
             'fat_percentage' => 'nullable|numeric|min:3|max:60',
-            'muscle_mass' => 'nullable|numeric|min:15|max:80',
+            'muscle_mass'    => 'nullable|numeric|min:10|max:120',
         ]);
 
-        $measurement = $request->user()->measurements()->create([
-            'height' => $request->height,
-            'weight' => $request->weight,
-            'fat_percentage' => $request->fat_percentage,
-            'muscle_mass' => $request->muscle_mass,
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
+        $user = User::find($request->user_id);
+
+        if (in_array($user->role, ['admin', 'reception'])) {
+            return response()->json(['message' => 'غير مسموح'], 403);
+        }
+
+        $measurement = Measurement::create([
+            'user_id'     => $user->id,
+            'height'      => $request->height,
+            'weight'      => $request->weight,
+            'fat_percentage'    => $request->fat_percentage,
+            'muscle_mass' => $request->muscle_mass,
+            'measured_at' => now(),
         ]);
 
         return response()->json([
+            'status'  => 201,
             'message' => 'تم حفظ القياسات بنجاح',
-            'data' => $measurement
-        ]);
+            'data' => [
+                'user_id' => $user->id,
+                'measurement' => $measurement,
+                'has_goal' => !is_null($user->goal_id),
+                'has_measurements' => true,
+                'profile_completed' => !is_null($user->goal_id)
+            ]
+        ], 201);
     }
 
     //تاريخ القياسات بدءا من الاحدث لاجل الرسم البياني

@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Coach;
+
+use App\Http\Controllers\Controller;
 
 use Illuminate\Http\Request;
 use App\Models\WorkSchedule;
@@ -33,7 +35,9 @@ class CoachSelectionController extends Controller
                     'id' => $coach->id,
                     'membership_number' => $coach->membership_number, 
                     'full_name' => $coach->full_name,                 
-                    'phone' => $coach->phone,                         
+                    'phone' => $coach->phone,
+                    'email' => $coach->email,
+                    'status' => $coach->status,
                     'trainees_count' => $traineesCount,               
                     'work_schedules' => $schedules,                   
                 ];
@@ -67,6 +71,7 @@ class CoachSelectionController extends Controller
         ]);
     }
 
+    // اختيار كوتش من قبل المتدرب
     public function selectCoach(Request $request)
     {
         $request->validate([

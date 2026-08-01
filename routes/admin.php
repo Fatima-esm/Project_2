@@ -2,11 +2,15 @@
 
 
 use App\Http\Controllers\Admin\AdminAuthController;
-use App\Http\Controllers\Admin\Coach\CoachScheduleController;
+use App\Http\Controllers\Coach\CoachScheduleController;
+use App\Http\Controllers\Coach\CoachSelectionController;
+
 use App\Http\Controllers\User\UserAuthController;
 use App\Http\Controllers\Payment\SubscriptionController;
 use App\Http\Controllers\Product\ProductController;
 
+use App\Http\Controllers\Admin\ManagementCoachController;
+use App\Http\Controllers\Admin\SalaryController;
 use Illuminate\Http\Request;
 use Spatie\Permission\Traits\HasRoles;  //for role and permission
 
@@ -65,12 +69,26 @@ use Illuminate\Support\Facades\Route;
             Route::post('/Staff/update/{user_id}', [CoachScheduleController::class, 'updateStaffSchedules']);
         });  
 
-        //
-        Route::get('coachs/all', [CoachScheduleController::class, 'getCoachesList']);
-        // عرض تفاصيل كوتش محدد
-        Route::get('coaches/{id}', [CoachScheduleController::class, 'coachDetails']);
+        //عرض طلبات الكوتش المعلقة
+        Route::get('coaches/pending', [ManagementCoachController::class, 'getPendingCoaches']);
+        //قبول أو رفض طلبات الكوتش
+        Route::post('coaches/{id}/update-status', [ManagementCoachController::class, 'updateCoachStatus']);
+        // عرض المدربين المرفوضين
+        Route::get('coaches/rejected', [ManagementCoachController::class, 'getRejectedCoaches']);
+        // إعادة تفعيل حساب المدرب المرفوض
+        Route::post('coaches/{id}/reactivate', [ManagementCoachController::class, 'reactivateCoach']);
 
+
+        Route::get('coachs/all', [CoachSelectionController::class, 'index']);
+        // عرض تفاصيل كوتش محدد
+        Route::get('coaches/{id}', [CoachSelectionController::class, 'show']);
+        // عرض المتدربين التابعين لكوتش معين (بإرسال الـ coach_id في الـ URL)
+        Route::get('/coach/{id}/trainees', [ManagementCoachController::class, 'getTraineesByCoach']);
     
+        // 1. إضافة أو تعديل راتب الموظف/الكوتش (مع احتساب المكافآت والخصومات)
+        Route::post('/coach/salaries', [SalaryController::class, 'storeOrUpdateSalary']);
+        Route::get('/coach/{id}/salaries', [SalaryController::class, 'getEmployeeSalaries']);
+
         //add Products 
         Route::post('products/add', [ProductController::class, 'storeProduct']);
         Route::post('products/update/{id}', [ProductController::class, 'updateProduct']);

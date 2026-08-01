@@ -28,9 +28,10 @@ return new class extends Migration
             $table->foreignId('coach_id')->nullable()->constrained('users')->onDelete('set null');
             
             $table->string('otp')->nullable(); 
-
             $table->timestamp('email_verified_at')->nullable();
+
             $table->enum('status', ['pending', 'active', 'rejected', 'expired', 'banned'])->default('pending'); 
+            $table->string('status_reason')->nullable();
 
             $table->foreignId('goal_id')->nullable()->constrained('goals')->onDelete('set null');
             

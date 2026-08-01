@@ -11,12 +11,13 @@ use App\Http\Controllers\Payment\SubscriptionController;
 
 use App\Http\Controllers\Product\ProductController;
 
-use App\Http\Controllers\CoachSelectionController;
+use App\Http\Controllers\Coach\CoachSelectionController;
+use App\Http\Controllers\Coach\TraineeController;
+use App\Http\Controllers\Coach\WorkoutPlanController;
 
 use App\Http\Controllers\User\UserAuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\WorkoutController;
 use App\Http\Controllers\MeasurementController;
 
 
@@ -38,25 +39,23 @@ use App\Http\Controllers\MeasurementController;
     // تم*
     Route::post('/upload-cv', [UserAuthController::class, 'uploadCv']); // coach only
 
-    Route::middleware(['auth:sanctum',              ])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:trainee|coach'])->group(function () {
     // باقي خدمات النادي
 
         Route::middleware('check.subscription')->group(function () {
-            Route::get('exercises', [ExerciseController::class, 'index']);
+            Route::get('exercises', [ExercisesController::class, 'index']);
 
-            // 2. الشاشة الرئيسية (Home)
-            Route::get('/user/workouts', [WorkoutController::class, 'index']);
-            Route::get('/user/workouts/{id}', [WorkoutController::class, 'show']);
             //عرض الكوتش
             Route::get('/user/coaches', [CoachSelectionController::class, 'index']);
             // عرض تفاصيل كوتش محدد
             Route::get('/user/coaches/{id}', [CoachSelectionController::class, 'show']);
             // اختيار الكوتش (يشترط وجود اشتراك نشط)
             Route::post('/user/select-coach', [CoachSelectionController::class, 'selectCoach']);
-             // اختيار الكوتش (يشترط وجود اشتراك نشط)
+            // اختيار الكوتش (يشترط وجود اشتراك نشط)
             Route::post('/user/change-coach', [CoachSelectionController::class, 'requestChangeCoach']);
-           
-            // 4. التقدم والقياسات
+
+
+           // 4. التقدم والقياسات
             Route::get("/user/measurements", [ProfileController::class, 'getMeasurements']);
             Route::get('/user/measurements/history', [ProfileController::class, 'getHistory']);
 
@@ -68,8 +67,13 @@ use App\Http\Controllers\MeasurementController;
     Route::post('/user/profile/update', [ProfileController::class, 'update']);
     Route::get('/user/qr-code', [ProfileController::class, 'generateQR']);
 
-
-
+    //عرض المتدربين عند الكوتش المشرف
+    Route::get('/coach/my-trainees/all', [TraineeController::class, 'indexMyTrainees']);
+    Route::get('/coach/my-trainees/detailes/{id}', [TraineeController::class, 'showTraineeDetails']);
+    //وضع الكوتش خطة لمتدرب 
+    Route::post('/coach/trainees/{id}/add-workout-plan', [WorkoutPlanController::class, 'assignWorkoutPlan']);
+    Route::get('/coach/trainee/{id}/workout-plans', [WorkoutPlanController::class, 'getTraineeWorkoutPlans']);
+    Route::post('/coach/trainees/workout-plan/{planId}/update', [WorkoutPlanController::class, 'updateWorkoutPlan']);
 
     //.......................................................................................................
     // صفحة التمارين

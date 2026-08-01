@@ -111,6 +111,11 @@ class User extends Authenticatable
         return $this->hasMany(User::class, 'coach_id');
     }
 
+    // علاقة مع خطط التمرين
+    public function workoutPlans()
+    {
+        return $this->hasMany(WorkoutPlan::class, 'trainee_id');        
+    }
     
     
 }

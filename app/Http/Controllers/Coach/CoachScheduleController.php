@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin\Coach;
+namespace App\Http\Controllers\Coach;
 
 use App\Http\Controllers\Controller;
 use App\Models\WorkSchedule;
@@ -75,7 +75,6 @@ class CoachScheduleController extends Controller
 
         $user = User::findOrFail($request->user_id);
 
-        // التحقق: هل المستخدم كوتش أو موظف استقبال؟
         if (!in_array($user->role, ['coach', 'reception'])) {
             return response()->json([
                 'message' => 'لا يمكن تعيين جداول عمل إلا للكوتش أو موظف الاستقبال',
@@ -123,92 +122,6 @@ class CoachScheduleController extends Controller
         ]);
     }
 
-    //عرض جميع الكوتش
-    public function getCoachesList( )
-    {
-        $coaches = User::where('role', 'coach')
-            ->with('workSchedules') 
-            ->get()
-            ->map(function ($coach) {
-                $traineesCount = User::where('coach_id', $coach->id)->count();
-
-                $schedules = $coach->workSchedules->map(function ($schedule) {
-                    return [
-                        'days' => $schedule->days,
-                        'work_name' => $schedule->work_name,
-                        'start_time' => $schedule->start_time,
-                        'end_time' => $schedule->end_time,
-                    ];
-                });
-
-                return [
-                    'id' => $coach->id,
-                    'membership_number' => $coach->membership_number, 
-                    'full_name' => $coach->full_name,                 
-                    'phone' => $coach->phone,                         
-                    'trainees_count' => $traineesCount,               
-                    'work_schedules' => $schedules,                   
-                ];
-            });
-
-        return response()->json([
-            'status' => 200,
-            'message' => 'تم جلب قائمة الكوتشات بنجاح',
-            'data' => $coaches
-        ]);
-    }
-
-    //details coach
-
-    public function coachDetails($id)
-    {
-        $coach = User::with('workSchedules')
-            ->where('role', 'coach')
-            ->findOrFail($id);
-        $traineesCount = User::where('coach_id', $coach->id)->count();
-
-        return response()->json([
-            'status' => 200,
-            'message' => 'تم جلب تفاصيل الكوتش بنجاح',
-            'data' => [
-                'traineesCount'=>$traineesCount,
-                'coachs' => $coach,
-            ]
-        ]);
-    }
-
-    //المتدربين عند الكوتش
-    public function getCoachTrainees($coach_id)
-    {
-        // التأكد أن المستخدم موجود وهو كوتش بالفعل
-        $coach = User::where('id', $coach_id)
-            ->where('role', 'coach')
-            ->first();
-
-        if (!$coach) {
-            return response()->json([
-                'status' => 404,
-                'message' => 'الكوتش غير موجود.'
-            ], 404);
-        }
-
-        // جلب المتدربين الذين لديهم coach_id يطابق هذا الكوتش
-        $trainees = User::where('coach_id', $coach->id)
-            ->select('id', 'full_name', 'phone', 'email', 'status', 'created_at') // اختر الحقول التي تريدها للمتدرب
-            ->get();
-
-        return response()->json([
-            'status' => 200,
-            'message' => 'تم جلب متدربي الكوتش بنجاح',
-            'coach' => [
-                'id' => $coach->id,
-                'full_name' => $coach->full_name,
-                'membership_number' => $coach->membership_number,
-                'total_trainees' => $trainees->count(),
-            ],
-            'trainees' => $trainees
-        ]);
-    }
 
 
     //
