@@ -29,5 +29,17 @@ class DatabaseSeeder extends Seeder
 
         $this->call(WorkScheduleSeeder::class);
 
-    }
+        $this->call(CoachSeeder::class);
+        
+        $this->call(TraineeSeeder::class);
+
+        $this->call(SalarySeeder::class);
+
+        $this->call(ProductSeeder::class);
+
+        $this->call([
+            CategoryAndExerciseSeeder::class, // أضف هذا السطر هنا
+        ]);
+        
+        }
 }

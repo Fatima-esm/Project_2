@@ -18,8 +18,10 @@ return new class extends Migration
             $table->decimal('bonus', 10, 2)->default(0); // المكافآت الإضافية
             $table->decimal('deduction', 10, 2)->default(0); // الخصومات
             $table->decimal('net_salary', 10, 2);      // الصافي (الأساسي + المكافآت - الخصومات)
-            $table->string('month');                     // الشهر وسنة الراتب (مثلا: "2026-08")
+            $table->string('month');                   // الشهر وسنة الراتب (مثلا: "2026-08")
+            $table->enum('status', ['pending', 'paid']) ->default('pending');                     
             $table->text('notes')->nullable();           // سبب المكافأة أو الخصم أو ملاحظات الإدارة
+            $table->enum('payment_method', ['cash', 'bank'])->default('cash'); // طريقة الدفع: كاش أو بنك
             $table->timestamps();
         });
     }

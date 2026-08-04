@@ -117,5 +117,15 @@ class User extends Authenticatable
         return $this->hasMany(WorkoutPlan::class, 'trainee_id');        
     }
     
-    
+    public function schedules()
+    {
+        return $this->hasMany(CoachSchedule::class, 'user_id');
+    }
+
+    // علاقة المستخدم بسجل الرواتب (المستخدم يملك عدة رواتب)
+    public function salaries()
+    {
+        return $this->hasMany(Salary::class, 'user_id');
+    }
+
 }

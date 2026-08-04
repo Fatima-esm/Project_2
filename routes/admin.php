@@ -4,6 +4,7 @@
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Coach\CoachScheduleController;
 use App\Http\Controllers\Coach\CoachSelectionController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 
 use App\Http\Controllers\User\UserAuthController;
 use App\Http\Controllers\Payment\SubscriptionController;
@@ -19,6 +20,12 @@ use Illuminate\Support\Facades\Route;
 
     // مسارات عامة لا تحتاج توكن
     Route::post('/dashboard/login', [AdminAuthController::class, 'login']); 
+    // 1. شاشة إدخال الإيميل (Forgot Password)
+    Route::post('dashboard/password/email', [ForgotPasswordController::class, 'sendResetOtp']);
+    Route::post('dashboard/password/verify-otp', [ForgotPasswordController::class, 'verifyOtp']);
+    Route::post('dashboard/password/reset', [ForgotPasswordController::class, 'resetPassword']);
+
+
 
     // مسارات محمية حسب الدور
     Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
@@ -62,11 +69,11 @@ use Illuminate\Support\Facades\Route;
             Route::delete('/{schedule_id}', [CoachScheduleController::class, 'destroy']);
 
             //....................................
-            
             // تعيين جداول عمل لكوتش
             Route::post('/Staff/{user_id}', [CoachScheduleController::class, 'assignSchedule']);
             Route::get('/Staff/{user_id}', [CoachScheduleController::class, 'showStaffSchedules']);
             Route::post('/Staff/update/{user_id}', [CoachScheduleController::class, 'updateStaffSchedules']);
+            Route::get('/staff/schedules-report', [CoachScheduleController::class, 'getAllStaffWithSchedules']);
         });  
 
         //عرض طلبات الكوتش المعلقة
@@ -85,9 +92,16 @@ use Illuminate\Support\Facades\Route;
         // عرض المتدربين التابعين لكوتش معين (بإرسال الـ coach_id في الـ URL)
         Route::get('/coach/{id}/trainees', [ManagementCoachController::class, 'getTraineesByCoach']);
     
+
         // 1. إضافة أو تعديل راتب الموظف/الكوتش (مع احتساب المكافآت والخصومات)
         Route::post('/coach/salaries', [SalaryController::class, 'storeOrUpdateSalary']);
         Route::get('/coach/{id}/salaries', [SalaryController::class, 'getEmployeeSalaries']);
+        // تعيين راتب جماعي للكوتش أو الاستقبال بناءً على خطة العمل والدور والشهر
+        Route::post('/salaries/assign', [SalaryController::class, 'assignSalaryByWorkSchedule']);
+        Route::post('/salaries/{salaryId}/pay', [SalaryController::class, 'paySalary']);
+        // مسار عرض رواتب الموظفين مع الفلترة
+        Route::get('/salaries/employees', [SalaryController::class, 'getAllEmployeesSalaries']);
+
 
         //add Products 
         Route::post('products/add', [ProductController::class, 'storeProduct']);

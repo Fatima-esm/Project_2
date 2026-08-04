@@ -30,10 +30,13 @@ class UserAuthController extends Controller
 
         $validator = Validator::make($request->all(), [
             'full_name' => ['required', 'string', 'max:50'],
-            'email'     => ['required', 'email:filter', 'max:50', 'unique:users'],
-            'phone'     => ['sometimes', 'string', 'max:20', 'unique:users'],
+            'email'     => ['required', 'email:rfc,dns', 'max:50', 'unique:users'],
+            'phone'     => ['required', 'string', 'regex:/^963[0-9]{9}$/', 'unique:users'],
             'password'  => ['required', 'string', 'min:8', 'confirmed'],
             'role'      => ['required', 'in:coach,trainee' . ($isAdminOrReception ? ',admin,reception' : '')],
+        ],[
+            'phone.regex' => 'رقم الهاتف يجب أن يبدأ بـ 963 ويحتوي على 9 أرقام بعده.',
+            'email.email' =>  ' البريد الإلكتروني غير صالح او غير حقيقي.',
         ]);
 
         if ($validator->fails()) {
@@ -115,7 +118,7 @@ class UserAuthController extends Controller
     public function login(Request $request): \Illuminate\Http\JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'email' => ['required', 'email'],
+            'email' => ['required', 'email:rfc,dns'],
             'password' => ['required', 'string'],
         ]);
 

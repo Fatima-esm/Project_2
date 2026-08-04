@@ -122,6 +122,56 @@ class CoachScheduleController extends Controller
         ]);
     }
 
+    /**
+     * عرض جميع الموظفين والكوتشز مع مواعيد عملهم وإمكانية الفلترة
+     */
+    public function getAllStaffWithSchedules(Request $request): \Illuminate\Http\JsonResponse
+    {
+        // بناء الاستعلام لجلب المستخدمين الذين لديهم دور كوتش أو موظف استقبال
+        $query = User::whereIn('role', ['coach', 'reception'])
+            ->with(['workSchedules' => function ($q) use ($request) {
+                // الفلترة حسب اسم خطة العمل إذا تم تمريرها في الـ Request
+                if ($request->filled('work_name')) {
+                    $q->where('work_name', 'like', '%' . $request->work_name . '%');
+                }
+                // الفلترة حسب اليوم إذا تم تمريره في الـ Request
+                if ($request->filled('day')) {
+                    $q->where('days', 'like', '%' . $request->day . '%');
+                }
+            }]);
+
+        // الفلترة حسب الدور (coach أو reception) إذا تم طلبه
+        if ($request->filled('role')) {
+            $query->where('role', $request->role);
+        }
+
+        $staffMembers = $query->get();
+
+        // تنسيق البيانات لتظهر بشكل مرتب وواضح
+        $result = $staffMembers->map(function ($user) {
+            return [
+                'id'        => $user->id,
+                'full_name' => $user->full_name,
+                'phone'     => $user->phone ?? 'غير متوفر', // تأكد من اسم حقل رقم الجوال في جدولك
+                'role'      => $user->role,
+                'schedules' => $user->workSchedules->map(function ($schedule) {
+                    return [
+                        'schedule_id' => $schedule->id,
+                        'work_name'   => $schedule->work_name,
+                        'days'        => $schedule->days,
+                        'start_time'  => $schedule->start_time,
+                        'end_time'    => $schedule->end_time,
+                    ];
+                }),
+            ];
+        });
+
+        return response()->json([
+            'status' => 200,
+            'count'  => $result->count(),
+            'data'   => $result
+        ], 200);
+    }
 
 
     //

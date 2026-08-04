@@ -15,6 +15,8 @@ use App\Http\Controllers\Coach\CoachSelectionController;
 use App\Http\Controllers\Coach\TraineeController;
 use App\Http\Controllers\Coach\WorkoutPlanController;
 
+use App\Http\Controllers\Auth\ForgotPasswordController;
+
 use App\Http\Controllers\User\UserAuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +26,15 @@ use App\Http\Controllers\MeasurementController;
     Route::post('register',[UserAuthController::class,'register']);
     Route::post('login',[UserAuthController::class,'login']);
     Route::post('logout', [UserAuthController::class,'logout'])->middleware('auth:sanctum,api');
+
+
+
+    // 1. شاشة إدخال الإيميل (Forgot Password)
+    Route::post('/password/email', [ForgotPasswordController::class, 'sendResetOtp']);
+    // 2. شاشة إدخال الرمز والتحقق منه فقط (Verify OTP)
+    Route::post('/password/verify-otp', [ForgotPasswordController::class, 'verifyOtp']);
+    // 3. شاشة كلمة المرور الجديدة وتأكيدها (Reset Password)
+    Route::post('/password/reset', [ForgotPasswordController::class, 'resetPassword']);
 
     //لاجل ادخال الهدف ععند التسجيل لا تحتاج توكين
     Route::get('/goals', [ProfileController::class, 'allGoals']);

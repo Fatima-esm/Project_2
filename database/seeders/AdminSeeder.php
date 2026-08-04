@@ -20,8 +20,8 @@ class AdminSeeder extends Seeder
         // add admin account
         $admin = User::create([
             'full_name' => 'Admin',
-            'email' => 'admin@gymapp.com',
-            'phone' => '0987654321',
+            'email' => 'admin@gmail.com',
+            'phone' => '09876540321',
             'password' => bcrypt('12345678'),
             'role' => 'admin',
             'active_at' => 1,
@@ -32,18 +32,50 @@ class AdminSeeder extends Seeder
         $admin->assignRole('admin');
         
         // add receptionist account
-        $reception = User::create([
-            'full_name' => 'Reception',
-            'email' => 'reception@gymapp.com',
-            'phone' => '0987654322',
-            'password' => bcrypt('12345678'),
-            'role' => 'reception',
-            'status' => 'active',
-            'active_at' => 1,
-            'email_verified_at' => now(),
-            'membership_number' => 'REC-001',
-        ]);
-        $reception->assignRole('reception');
+        $reception = [
+            [
+                'full_name' => 'Reception 1',
+                'email' => 'reception1@gmail.com',
+                'phone' => '0987654322',
+                'password' => bcrypt('12345678'),
+                'role' => 'reception',
+                'status' => 'active',
+                'active_at' => 1,
+                'email_verified_at' => now(),
+                'membership_number' => 'REC-20001',
+            ],
+            [
+                'full_name' => 'Reception 2',
+                'email' => 'reception2@gmail.com',
+                'phone' => '09876504323',
+                'password' => bcrypt('12345678'),
+                'role' => 'reception',
+                'status' => 'active',
+                'active_at' => 1,
+                'email_verified_at' => now(),
+                'membership_number' => 'REC-20002',
+            ],
+            [
+                'full_name' => 'Reception 3',
+                'email' => 'reception3@gmail.com',
+                'phone' => '09876500323',
+                'password' => bcrypt('12345678'),
+                'role' => 'reception',
+                'status' => 'active',
+                'active_at' => 1,
+                'email_verified_at' => now(),
+                'membership_number' => 'REC-20003',
+            ],
+        ];
+
+        foreach ($reception as $recepData) {
+            $user = User::create($recepData);
+            
+            // إذا كنت تستخدم حزمة Spatie لإدارة الأدوار، يمكنك تفعيل هذا السطر:
+            if (method_exists($user, 'assignRole')) {
+                $user->assignRole('reception');
+            }
+        }
 
 
         
