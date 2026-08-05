@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use App\Mail\VerifyAccountMail; 
 use Carbon\Carbon;
+use App\Services\ActivityService;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter; 
@@ -37,10 +38,13 @@ class UserAuthController extends Controller
         ],[
             'phone.regex' => 'رقم الهاتف يجب أن يبدأ بـ 963 ويحتوي على 9 أرقام بعده.',
             'email.email' =>  ' البريد الإلكتروني غير صالح او غير حقيقي.',
+            'email.unique' =>  ' البريد الإلكتروني مستخدم من قبل.',
+            'phone.unique' =>  ' رقم الهاتف مستخدم من قبل.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            $allErrors = collect($validator->errors()->all())->implode(' - ');
+            return response()->json(['message' => $allErrors], 422);
         }
 
         // تحديد الحالة والنشاط بناءً على الدور
@@ -58,6 +62,8 @@ class UserAuthController extends Controller
             'status'            => $status,
             'active_at'         => $activeAt,
             'membership_number' => 'SG-' . mt_rand(10000, 99999),
+            'added_by'  => auth()->id(),
+
         ]);
 
         // معالجة الخطة المجانية للمتدرب فقط
@@ -76,12 +82,19 @@ class UserAuthController extends Controller
         // تعيين الدور لـ Spatie
         $user->assignRole($request->role);
 
+        ActivityService::log(
+            'تم إنشاء حساب جديد برتبة: ' . $user->role, 
+            $user, // تمرير الكائن الصحيح هنا
+            ['email' => $user->email, 'phone' => $user->phone],
+            'auth'
+        );
+
         return response()->json([
             'status'    => 201 ,
             'message'   => "تم إنشاء الحساب بواسطة " . (auth()->check() ? 'الإدارة' : 'المستخدم.') . ($isCoach ? "قم برفع السيرة الذاتية وانتظر موافقة الإدارة" : ""),
             'user_id'   => $user->id,
             'data' => $user,
-            'membership_number' => $user->membership_number
+            'membership_number' => $user->membership_number,
         ], 201);
     }
 
@@ -91,7 +104,8 @@ class UserAuthController extends Controller
             $request->validate([
             'user_id' => 'required|exists:users,id',
             'cv' => 'required|mimes:pdf|max:10000',
-            ]);  
+            ]);
+              
 
         $user = User::find($request->user_id);
 

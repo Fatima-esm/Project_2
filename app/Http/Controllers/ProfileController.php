@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\RateLimiter; 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Goal;
@@ -34,13 +35,29 @@ class ProfileController extends Controller
         $validator = Validator::make($request->all(), [
             'full_name'     => 'sometimes|string|max:50',
             'age'           => 'sometimes|integer|min:12|max:90',
-            'email'         => 'sometimes|email|unique:users,email,' . $user->id,
+            'email'         => 'sometimes|email:rfc,dns|unique:users,email,' . $user->id,
             'gender'        => 'sometimes|string|in:male,female,ذكر,أنثى,انثى,رجل,امرأة',
-            'phone'         => 'sometimes|unique:users,phone,' . $user->id,
             'profile_image' => 'sometimes|image|mimes:jpeg,png,jpg|max:4096', // رفع صورة      ]);
+        ], [
+            'email.email' => 'البريد الإلكتروني غير صالح',
+            'email.unique' => 'البريد الإلكتروني مستخدم من قبل',
+            'profile_image.image' => 'يجب أن تكون الصورة بصيغة صحيحة',
+            'profile_image.mimes' => 'يجب أن تكون الصورة بصيغة jpeg أو png أو jpg',
+            'profile_image.max' => 'حجم الصورة يجب ألا يتجاوز 4 ميغابايت',
+        ],[
+            'phone' => [
+                'required',
+                'string',
+                'unique:users,phone,' . $user->id,
+                'regex:/^9639[0-9]{8}$/' // تمرير الـ regex داخل مصفوفة يمنع حدوث خطأ الـ modifiers تماماً
+            ],], [
+                'phone.regex'  => 'رقم الهاتف يجب أن يكون بصيغة الرقم السوري الصحيحة ويبدأ بـ 9639 ويتكون من 12 رقماً.',
+                'phone.unique' => 'رقم الهاتف مستخدم من قبل شخص آخر.',
         ]);
+        
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            $allErrors = collect($validator->errors()->all())->implode(' - ');
+            return response()->json(['message' => $allErrors], 422);
         }
 
         if ($request->hasFile('profile_image')) {
@@ -79,10 +96,14 @@ class ProfileController extends Controller
         $validator = Validator::make($request->all(), [
             'user_id' => 'required|exists:users,id',
             'goal_id' => 'required|exists:goals,id',
+        ],[
+            'goal_id.required' => 'الهدف مطلوب',
+            'goal_id.exists' => 'الهدف غير موجود',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            $allErrors = collect($validator->errors()->all())->implode(' - ');
+            return response()->json(['message' => $allErrors], 422);
         }
 
         $user = User::find($request->user_id);
@@ -125,19 +146,28 @@ class ProfileController extends Controller
         ], 200);
     }
  
-    //تعديل او اضافة قياسات
+//تعديل او اضافة قياسات وتحديث العمر والجنس للمستخدم
     public function addMeasurement(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'user_id'        => 'required|exists:users,id',
-            'height'         => 'required|numeric|min:100|max:250',
-            'weight'         => 'required|numeric|min:30|max:300',
-            'fat_percentage' => 'nullable|numeric|min:3|max:60',
-            'muscle_mass'    => 'nullable|numeric|min:10|max:120',
+            'user_id'          => 'required|exists:users,id',
+            'height'           => 'required|numeric|min:100|max:250',
+            'weight'           => 'required|numeric|min:30|max:300',
+            'fat_percentage'   => 'nullable|numeric|min:3|max:60',
+            'muscle_mass'      => 'nullable|numeric|min:10|max:120',
+            'age'              => 'required|integer|min:12|max:90',
+            'gender'           => 'required|string|in:male,female,ذكر,أنثى,انثى,رجل,امرأة',
+        ], [
+            'age.required'     => 'العمر مطلوب',
+            'age.integer'      => 'العمر يجب أن يكون رقماً صحيحاً',
+            'gender.required'  => 'الجنس مطلوب',
+            'gender.in'        => 'قيمة الجنس المدخلة غير صحيحة',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            // دمج جميع رسائل الأخطاء في نص واحد يفصل بينها مسافة أو فاصلة
+            $allErrors = collect($validator->errors()->all())->implode(' - ');
+            return response()->json(['message' => $allErrors], 422);
         }
 
         $user = User::find($request->user_id);
@@ -146,20 +176,31 @@ class ProfileController extends Controller
             return response()->json(['message' => 'غير مسموح'], 403);
         }
 
+        // 1. تحديث العمر والجنس في جدول الـ users
+        $user->update([
+            'age'    => $request->age,
+            'gender' => $request->gender,
+        ]);
+
+        // 2. إنشاء سجل القياسات الجديد في جدول الـ measurements
         $measurement = Measurement::create([
-            'user_id'     => $user->id,
-            'height'      => $request->height,
-            'weight'      => $request->weight,
+            'user_id'           => $user->id,
+            'height'            => $request->height,
+            'weight'            => $request->weight,
             'fat_percentage'    => $request->fat_percentage,
-            'muscle_mass' => $request->muscle_mass,
-            'measured_at' => now(),
+            'muscle_mass'       => $request->muscle_mass,
+            'measured_at'       => now(),
         ]);
 
         return response()->json([
             'status'  => 201,
-            'message' => 'تم حفظ القياسات بنجاح',
+            'message' => 'تم حفظ القياسات وتحديث بيانات المستخدم بنجاح',
             'data' => [
                 'user_id' => $user->id,
+                'user_info' => [
+                    'age' => $user->age,
+                    'gender' => $user->gender,
+                ],
                 'measurement' => $measurement,
                 'has_goal' => !is_null($user->goal_id),
                 'has_measurements' => true,
@@ -167,6 +208,7 @@ class ProfileController extends Controller
             ]
         ], 201);
     }
+
 
     //تاريخ القياسات بدءا من الاحدث لاجل الرسم البياني
     public function getHistory(Request $request)

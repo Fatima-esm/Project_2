@@ -27,8 +27,6 @@ class DatabaseSeeder extends Seeder
          
         $this->call(GoalSeeder::class);
 
-        $this->call(WorkScheduleSeeder::class);
-
         $this->call(CoachSeeder::class);
         
         $this->call(TraineeSeeder::class);
@@ -41,5 +39,7 @@ class DatabaseSeeder extends Seeder
             CategoryAndExerciseSeeder::class, // أضف هذا السطر هنا
         ]);
         
+        $this->call(WorkScheduleSeeder::class);
+
         }
 }

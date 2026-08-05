@@ -39,7 +39,8 @@ class CoachSelectionController extends Controller
                     'email' => $coach->email,
                     'status' => $coach->status,
                     'trainees_count' => $traineesCount,               
-                    'work_schedules' => $schedules,                   
+                    'work_schedules' => $schedules, 
+                                      
                 ];
             });
 

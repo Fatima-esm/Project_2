@@ -9,7 +9,7 @@ class WorkSchedule extends Model
 {
     use HasFactory;
 
-    protected $fillable = [ 'day', 'work_name', 'start_time', 'end_time'];
+    protected $fillable = [ 'days', 'work_name', 'start_time', 'end_time'];
 
 
     public function coaches()

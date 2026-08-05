@@ -15,6 +15,8 @@ use App\Http\Controllers\Admin\SalaryController;
 use Illuminate\Http\Request;
 use Spatie\Permission\Traits\HasRoles;  //for role and permission
 
+use App\Http\Controllers\Admin\AdminReceptionistController;
+
 use Illuminate\Support\Facades\Route;
 
 
@@ -74,7 +76,18 @@ use Illuminate\Support\Facades\Route;
             Route::get('/Staff/{user_id}', [CoachScheduleController::class, 'showStaffSchedules']);
             Route::post('/Staff/update/{user_id}', [CoachScheduleController::class, 'updateStaffSchedules']);
             Route::get('/staff/schedules-report', [CoachScheduleController::class, 'getAllStaffWithSchedules']);
-        });  
+        });
+
+        Route::middleware(['auth:sanctum'])->prefix('admin/receptionists')->group(function () {
+            Route::get('/', [AdminReceptionistController::class, 'index']);          // عرض كل موظفي الاستقبال (مع بحث و Paginate)
+            Route::post('/', [AdminReceptionistController::class, 'store']);         // إضافة موظف استقبال جديد
+            Route::get('/{id}', [AdminReceptionistController::class, 'show']);       // عرض تفاصيل موظف استقبال محدد
+            Route::put('/{id}', [AdminReceptionistController::class, 'update']);     // تعديل بيانات موظف استقبال
+            Route::delete('/{id}', [AdminReceptionistController::class, 'destroy']); // حذف موظف استقبال
+            Route::post('/{id}/status', [AdminReceptionistController::class, 'toggleStatus']); // تفعيل أو حظر حساب موظف الاستقبال
+            Route::get('/{id}/activity-logs', [AdminReceptionistController::class, 'receptionistActivity']); // عرض سجل نشاطات موظف الاستقبال
+        });
+         
 
         //عرض طلبات الكوتش المعلقة
         Route::get('coaches/pending', [ManagementCoachController::class, 'getPendingCoaches']);

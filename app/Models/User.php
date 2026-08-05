@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 use Laravel\Sanctum\HasApiTokens;
 
 use Spatie\Permission\Traits\HasRoles;  //for role and permission
@@ -17,7 +18,8 @@ class User extends Authenticatable
 {
     use HasRoles;
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
-    
+    use LogsActivity;
+
     protected $guard_name = 'web';
     /**
      * The attributes that are mass assignable.
@@ -128,4 +130,11 @@ class User extends Authenticatable
         return $this->hasMany(Salary::class, 'user_id');
     }
 
+    // تحديد الخصائص التي تريد مراقبتها وتسيجلها
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll(['full_name','email', 'status']) // أو يمكنك تحديد حقول معينة لتخفيف الحجم ->logOnly(['full_name', 'status'])
+            ->logOnlyDirty(); // تسجيل التغييرات الفعلية فقط
+    }
 }

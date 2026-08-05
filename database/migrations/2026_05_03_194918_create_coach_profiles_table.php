@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('cv_path')->nullable(); // مسار ملف PDF
             $table->integer('years_of_experience')->nullable();
+            $table->string('about_me')->nullable();
+            $table->string('certificates_and_credits')->nullable();
             $table->string('id_card_image')->nullable();
             $table->timestamps();
         });

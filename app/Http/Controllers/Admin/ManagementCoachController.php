@@ -48,7 +48,7 @@ class ManagementCoachController extends Controller
     }
 
     //قبول أو رفض طلبات الكوتش   
-public function updateCoachStatus(Request $request, $id)
+    public function updateCoachStatus(Request $request, $id)
     {
         $admin = auth()->user();
 
@@ -87,6 +87,7 @@ public function updateCoachStatus(Request $request, $id)
             ]
         ], 200);
     }
+    
     public function getRejectedCoaches(Request $request)
     {
         $admin = auth()->user();
