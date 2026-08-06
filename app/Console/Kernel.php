@@ -14,6 +14,11 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command('subscriptions:expire' )->daily();
+
+            // أول يوم من كل شهر الساعة 1 صباحاً
+        $schedule->command('salaries:generate')
+                ->monthlyOn(1, '01:00')
+                ->timezone('Asia/Damascus');
         
     }
 

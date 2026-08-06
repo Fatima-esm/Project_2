@@ -3,15 +3,43 @@
 namespace App\Http\Controllers\Admin; // أو حسب مسار الـ Controllers لديك
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
 use Illuminate\Http\Request;
+use App\Models\User;
+use App\Models\Salary;
+use App\Models\Sale;
+use App\Models\Subscription;
+use App\Models\Attendance;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use App\Services\ActivityService;
+use App\Models\ActivityLog;
 
 class AdminReceptionistController extends Controller
 {
-// إضافة موظف استقبال جديد بواسطة الأدمن
+    public function staticsData()
+    {
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['message' => 'غير مصرح'], 403);
+        }
+
+        $totalStaff     = User::role('reception')->count();
+        $activated     = User::role('reception')->where('active_at', 1)->count(); // أو حسب الحضور
+        $onLeave        = User::role('reception')->where('status', 'on_leave')->count();
+        $pendingSalaries = Salary::whereHas('user', fn($q) => $q->role('reception'))
+                                ->where('status', 'pending')->count();
+
+        return response()->json([
+            'status' => 200,
+            'data' => [
+                'total_staff'      => $totalStaff,
+                'activated_receptions'=> $activated,
+                'on_leave'         => $onLeave,
+                'pending_salaries' => $pendingSalaries,
+            ]
+        ]);
+    }
+
+    // إضافة موظف استقبال جديد بواسطة الأدمن
     public function store(Request $request): \Illuminate\Http\JsonResponse
     {
         $admin = auth()->user();
@@ -86,7 +114,7 @@ class AdminReceptionistController extends Controller
         ], 201);
     } 
     
-// تعديل بيانات موظف استقبال محدد بواسطة الأدمن
+    // تعديل بيانات موظف استقبال محدد بواسطة الأدمن
     public function update(Request $request, $id): \Illuminate\Http\JsonResponse
      {
         $admin = auth()->user();
@@ -341,7 +369,7 @@ class AdminReceptionistController extends Controller
 
         // استخدام all() لتغطية الـ Body والـ Query Parameters
         $validator = Validator::make($request->all(), [
-            'status' => ['required', 'in:active,rejected,banned'],
+            'status' => ['required', 'in:active,rejected,banned,on_leave'],
         ], [
             'status.required' => 'حقل الحالة مطلوب.',
             'status.in'       => 'حقل الحالة يجب أن يكون إحدى القيم التالية: active, rejected, banned.',
@@ -364,6 +392,180 @@ class AdminReceptionistController extends Controller
             'data'    => $receptionist
         ], 200);
     }
+
+    public function activity($id, Request $request)
+    {
+        if (auth()->user()->role !== 'admin') {
+            return response()->json(['message' => 'غير مصرح'], 403);
+        }
+
+        $user = User::role('reception')->find($id);
+        if (!$user) {
+            return response()->json(['message' => 'الموظف غير موجود'], 404);
+        }
+
+        $query = ActivityLog::where('user_id', $id)->latest();
+
+        // فلترة بالتاريخ (اختياري)
+        if ($request->filled('date')) {
+            $query->whereDate('created_at', $request->date);
+        }
+
+        $activities = $query->take(50)->get()->map(function ($log) {
+            return [
+                'id'      => $log->id,
+                'time'    => $log->created_at->format('H:i'),
+                'date'    => $log->created_at->format('Y-m-d'),
+                'action'  => $log->action_label,
+                'details' => $log->details,
+                'icon'    => $log->icon,
+                'properties' => $log->properties,
+            ];
+        });
+
+        return response()->json([
+            'status' => 200,
+            'data'   => $activities
+        ]);
+    }
+
+// 1. عرض الاشتراكات التي أنشأها موظف الاستقبال اعتماداً على سجل النشاطات (Activity Log)
+    public function receptionistSubscriptions(Request $request, $id): \Illuminate\Http\JsonResponse
+    {
+        $admin = auth()->user();
+        if (!$admin || $admin->role !== 'admin') {
+            return response()->json(['message' => 'غير مصرح لك، هذه الصلاحية للأدمن فقط'], 403);
+        }
+
+        $receptionist = User::where('role', 'reception')->find($id);
+        if (!$receptionist) {
+            return response()->json(['message' => 'موظف الاستقبال غير موجود'], 404);
+        }
+
+        // جلب معرفات الاشتراكات المرتبطة بهذا الموظف من جدول activity_logs
+        $subscriptionIds = ActivityLog::where('user_id', $id)
+            ->where('subject_type', Subscription::class)
+            ->pluck('subject_id')
+            ->unique();
+
+        $query = Subscription::whereIn('id', $subscriptionIds);
+
+        // فلترة التاريخ (من - إلى)
+        if ($request->filled('from_date') && $request->filled('to_date')) {
+            $query->whereBetween('created_at', [$request->from_date, $request->to_date]);
+        }
+
+        // حساب الإحصائيات
+        $totalNewSubscriptions = (clone $query)->count();
+        $totalSales = (clone $query)->sum('price'); 
+
+        $subscriptions = $query->latest()->paginate(10);
+
+        // تنسيق البيانات لتتطابق مع واجهة الفرونت إند
+        $formattedSubscriptions = collect($subscriptions->items())->map(function ($sub) {
+            return [
+                'id' => $sub->id,
+                'subscriber_name' => $sub->user->full_name ?? 'غير معروف',
+                'subscription_type' => $sub->plan->name ?? 'اشتراك',
+                'price' => $sub->price,
+                'date' => $sub->created_at->format('Y-m-d'),
+                'status' => $sub->status, 
+            ];
+        });
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'تم جلب اشتراكات موظف الاستقبال بنجاح',
+            'statistics' => [
+                'new_subscriptions' => $totalNewSubscriptions,
+                'total_sales' => $totalSales,
+            ],
+            'subscriptions' => [
+                'current_page' => $subscriptions->currentPage(),
+                'data' => $formattedSubscriptions,
+                'last_page' => $subscriptions->lastPage(),
+                'total' => $subscriptions->total(),
+            ]
+        ], 200);
+    }
+
+    // 2. عرض ملخص نشاطات موظف الاستقبال (المبيعات والاشتراكات وآخر دخول) عبر جدول النشاطات المخصص
+    public function receptionistSummary(Request $request, $id): \Illuminate\Http\JsonResponse
+    {
+        $admin = auth()->user();
+        if (!$admin || $admin->role !== 'admin') {
+            return response()->json(['message' => 'غير مصرح لك، هذه الصلاحية للأدمن فقط'], 403);
+        }
+
+        $receptionist = User::where('role', 'reception')->find($id);
+        if (!$receptionist) {
+            return response()->json(['message' => 'موظف الاستقبال غير موجود'], 404);
+        }
+
+        $fromDate = $request->input('from_date', now()->startOfMonth());
+        $toDate = $request->input('to_date', now()->endOfMonth());
+
+        // جلب معرفات الاشتراكات المرتبطة بالموظف من جدول النشاطات
+        $subscriptionIds = ActivityLog::where('user_id', $id)
+            ->where('subject_type', Subscription::class)
+            ->pluck('subject_id')
+            ->unique();
+
+        $subQuery = Subscription::whereIn('id', $subscriptionIds)
+            ->whereBetween('created_at', [$fromDate, $toDate]);
+
+        $totalSales = (clone $subQuery)->sum('price');
+        $newSubscriptionsCount = (clone $subQuery)->count();
+
+        // جلب آخر دخول للموظف من جدول النشاطات (البحث عن حركة تسجيل الدخول أو أحدث نشاط)
+        $lastLogin = ActivityLog::where('user_id', $id)
+            ->where(function($q) {
+                $q->where('action', 'like', '%login%')
+                  ->orWhere('action_label', 'like', '%دخول%');
+            })
+            ->latest()
+            ->value('created_at');
+
+        // إذا لم يوجد سجل دخول مصنف بكلمة دخول، نأخذ آخر نشاط تم تسجيله له
+        if (!$lastLogin) {
+            $lastLogin = ActivityLog::where('user_id', $id)->latest()->value('created_at');
+        }
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'تم جلب ملخص نشاطات الموظف بنجاح',
+            'data' => [
+                'employee_name' => $receptionist->full_name,
+                'last_login' => $lastLogin ? \Carbon\Carbon::parse($lastLogin)->format('Y-m-d h:i A') : 'لا يوجد دخول سابق',
+                'summary_cards' => [
+                    [
+                        'title' => 'آخر دخول',
+                        'value' => $lastLogin ? \Carbon\Carbon::parse($lastLogin)->format('h:i A') : '-',
+                        'icon' => 'clock'
+                    ],
+                    [
+                        'title' => 'الاشتراكات الجديدة / المجددة',
+                        'value' => $newSubscriptionsCount,
+                        'icon' => 'user-plus'
+                    ],
+                    [
+                        'title' => 'إجمالي المبيعات',
+                        'value' => $totalSales . ' $',
+                        'icon' => 'dollar'
+                    ]
+                ]
+            ]
+        ], 200);
+    }
+
+
+
+
+
+
+
+
+
 
     // 7. عرض سجل نشاطات موظف الاستقبال (تتبع العمليات والعمل)
     public function activityLog($id)
@@ -395,7 +597,7 @@ class AdminReceptionistController extends Controller
     public function receptionistActivity($id): \Illuminate\Http\JsonResponse
     {
         $admin = auth()->user();
-        if (!$admin || !in_array($admin->role, ['admin', 'reception'])) {
+        if (!$admin || !in_array($admin->role, ['admin'])) {
             return response()->json(['message' => 'غير مصرح لك'], 403);
         }
 

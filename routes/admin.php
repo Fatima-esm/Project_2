@@ -67,7 +67,7 @@ use Illuminate\Support\Facades\Route;
             Route::get('/all', [CoachScheduleController::class, 'index']);
             //اضافة موعد عمل جديد
             Route::post('/add', [CoachScheduleController::class, 'store']);
-            //حذف خطة عمل
+            Route::post('/update/{id}', [CoachScheduleController::class, 'update']);
             Route::delete('/{schedule_id}', [CoachScheduleController::class, 'destroy']);
 
             //....................................
@@ -79,13 +79,16 @@ use Illuminate\Support\Facades\Route;
         });
 
         Route::middleware(['auth:sanctum'])->prefix('admin/receptionists')->group(function () {
+            Route::get('/statistics', [AdminReceptionistController::class, 'staticsData']);
             Route::get('/', [AdminReceptionistController::class, 'index']);          // عرض كل موظفي الاستقبال (مع بحث و Paginate)
             Route::post('/', [AdminReceptionistController::class, 'store']);         // إضافة موظف استقبال جديد
             Route::get('/{id}', [AdminReceptionistController::class, 'show']);       // عرض تفاصيل موظف استقبال محدد
             Route::put('/{id}', [AdminReceptionistController::class, 'update']);     // تعديل بيانات موظف استقبال
             Route::delete('/{id}', [AdminReceptionistController::class, 'destroy']); // حذف موظف استقبال
             Route::post('/{id}/status', [AdminReceptionistController::class, 'toggleStatus']); // تفعيل أو حظر حساب موظف الاستقبال
-            Route::get('/{id}/activity-logs', [AdminReceptionistController::class, 'receptionistActivity']); // عرض سجل نشاطات موظف الاستقبال
+            Route::get('/{id}/activity-logs', [AdminReceptionistController::class, 'activity']); // عرض سجل نشاطات موظف الاستقبال
+            Route::get('/{id}/subscriptions', [AdminReceptionistController::class, 'receptionistSubscriptions']);
+            Route::get('/{id}/summary', [AdminReceptionistController::class, 'receptionistSummary']);
         });
          
 
@@ -99,9 +102,9 @@ use Illuminate\Support\Facades\Route;
         Route::post('coaches/{id}/reactivate', [ManagementCoachController::class, 'reactivateCoach']);
 
 
-        Route::get('coachs/all', [CoachSelectionController::class, 'index']);
+        Route::get('coachs/all', [ManagementCoachController::class, 'index']);
         // عرض تفاصيل كوتش محدد
-        Route::get('coaches/{id}', [CoachSelectionController::class, 'show']);
+        Route::get('coaches/{id}', [ManagementCoachController::class, 'show']);
         // عرض المتدربين التابعين لكوتش معين (بإرسال الـ coach_id في الـ URL)
         Route::get('/coach/{id}/trainees', [ManagementCoachController::class, 'getTraineesByCoach']);
     

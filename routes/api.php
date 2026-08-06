@@ -39,7 +39,7 @@ use App\Http\Controllers\MeasurementController;
     //لاجل ادخال الهدف ععند التسجيل لا تحتاج توكين
     Route::get('/goals', [ProfileController::class, 'allGoals']);
     Route::post('goals/select', [ProfileController::class, 'selectGoal']);
-    Route::post('/user/measurements/update', [ProfileController::class, 'addMeasurement']);
+    Route::post('/user/measurements/add', [ProfileController::class, 'addMeasurement']);
 
 
 
@@ -68,7 +68,9 @@ use App\Http\Controllers\MeasurementController;
 
            // 4. التقدم والقياسات
             Route::get("/user/measurements", [ProfileController::class, 'getMeasurements']);
+            Route::post("/user/measurements/update", [ProfileController::class, 'updateMeasurements']);
             Route::get('/user/measurements/history', [ProfileController::class, 'getHistory']);
+            Route::get('/user/goal/', [ProfileController::class, 'getGoal']);
 
 
         });

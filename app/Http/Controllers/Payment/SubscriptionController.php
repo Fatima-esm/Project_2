@@ -11,6 +11,7 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Models\ActivityLog;
 
 class SubscriptionController extends Controller
 {
@@ -210,6 +211,28 @@ class SubscriptionController extends Controller
                 'status'             => 'verified',
                 'notes'              => $request->note,
             ]);
+
+            // ===== تسجيل نشاط الموظف =====
+            $addedByName = auth()->user()->full_name;
+
+            ActivityLog::log(
+                auth()->id(),
+                'renew_subscription',
+                'تجديد اشتراك متدرب',
+                [
+                    'subject_type' => Subscription::class,
+                    'subject_id'   => $subscription->id,
+                    'details'      => 'اسم المتدرب: ' . $user->full_name . ' | عضوية: ' . $user->membership_number,
+                    'icon'         => 'renew_subscription',
+                    'properties'   => [
+                        'message' => 'تم تجديد اشتراك المتدرب: ' . $user->full_name .
+                                    ' | الباقة: ' . ($plan->name_ar ?? $plan->name) .
+                                    ' | طريقة الدفع: ' . ($transaction->payment_method).
+                                    ' | السعر: ' . $plan->price .
+                                    ' | بواسطة: ' . $addedByName
+                    ]
+                ]
+            );
 
             DB::commit();
 

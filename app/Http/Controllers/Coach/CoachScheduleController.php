@@ -35,6 +35,26 @@ class CoachScheduleController extends Controller
         ], 201);
     }
 
+    // تعديل خطة عمل (جدول زمني) موجودة
+    public function update(Request $request, $schedule_id)
+    {
+        $schedule = WorkSchedule::findOrFail($schedule_id);
+
+        $request->validate([
+            'days'       => 'required',
+            'work_name'  => 'required|string|max:100',
+            'start_time' => 'required|date_format:H:i',
+            'end_time'   => 'required|date_format:H:i|after:start_time',
+        ]);
+
+        $schedule->update($request->all());
+
+        return response()->json([
+            'message' => 'تم تعديل خطة العمل بنجاح',
+            'data'    => $schedule
+        ], 200);
+    }
+    
     // حذف خطة عمل (جدول زمني)
     public function destroy($schedule_id)
     {

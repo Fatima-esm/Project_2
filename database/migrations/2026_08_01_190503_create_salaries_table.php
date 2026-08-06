@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('month');                   // الشهر وسنة الراتب (مثلا: "2026-08")
             $table->enum('status', ['pending', 'paid']) ->default('pending');                     
             $table->text('notes')->nullable();           // سبب المكافأة أو الخصم أو ملاحظات الإدارة
-            $table->enum('payment_method', ['cash', 'bank'])->default('cash'); // طريقة الدفع: كاش أو بنك
+            $table->enum('payment_method', ['cash', 'bank', 'online', 'card'])->default('cash'); // طريقة الدفع: كاش أو بنك
             $table->timestamps();
         });
     }

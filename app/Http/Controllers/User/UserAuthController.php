@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Mail\VerifyAccountMail; 
 use Carbon\Carbon;
 use App\Services\ActivityService;
+use App\Models\ActivityLog;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter; 
@@ -82,13 +83,25 @@ class UserAuthController extends Controller
         // تعيين الدور لـ Spatie
         $user->assignRole($request->role);
 
-        ActivityService::log(
-            'تم إنشاء حساب جديد برتبة: ' . $user->role, 
-            $user, // تمرير الكائن الصحيح هنا
-            ['email' => $user->email, 'phone' => $user->phone],
-            'auth'
-        );
+       $addedByName = auth()->check() ? auth()->user()->full_name : 'المستخدم نفسه';
 
+        ActivityLog::log(
+            auth()->id() ?? $user->id,
+            'register',
+            'تسجيل مستخدم جديد',
+            [
+                'subject_type' => User::class,
+                'subject_id'   => $user->id,
+                'details'      => 'اسم المتدرب:'.$user->full_name . ' | عضوية: ' . $user->membership_number,
+                'icon'         => 'add trainee',
+                'properties'   => [
+                    'message' => 'تمت إضافة متدرب جديد: ' . $user->full_name .
+                                ' | رقم العضوية: ' . $user->membership_number .
+                                ' | بواسطة: ' . $addedByName
+                ]
+            ]
+        );
+        
         return response()->json([
             'status'    => 201 ,
             'message'   => "تم إنشاء الحساب بواسطة " . (auth()->check() ? 'الإدارة' : 'المستخدم.') . ($isCoach ? "قم برفع السيرة الذاتية وانتظر موافقة الإدارة" : ""),
@@ -293,6 +306,25 @@ class UserAuthController extends Controller
 
         $user->load(['coach', 'goal']);
 
+        // ===== تسجيل النشاط (موحد) =====
+        $addedByName = auth()->user()->full_name;
+
+        ActivityLog::log(
+            auth()->id(),
+            'update_trainee',
+            'تعديل بيانات متدرب',
+            [
+                'subject_type' => User::class,
+                'subject_id'   => $user->id,
+                'details'      => 'اسم المتدرب: ' . $user->full_name . ' | عضوية: ' . $user->membership_number,
+                'icon'         => 'edit_trainee',
+                'properties'   => [
+                    'message' => 'تم تعديل بيانات المتدرب: ' . $user->full_name .
+                                ' | رقم العضوية: ' . $user->membership_number .
+                                ' | بواسطة: ' . $addedByName
+                ]
+            ]
+        );
         return response()->json([
             'status' => 200,
             'message' => 'تم تعديل بيانات المستخدم بنجاح',

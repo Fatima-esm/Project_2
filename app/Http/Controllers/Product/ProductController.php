@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\SaleItem;
+use App\Models\ActivityLog;
 
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -298,6 +299,35 @@ class ProductController extends Controller
 
                 $sale->load(['items.product', 'user', 'seller']);
 
+                //  تسجيل نشاط الموظف 
+                $addedByName = auth()->user()->full_name;
+
+                $customerName = $sale->user_id
+                    ? $sale->user->full_name . ' | عضوية: ' . $sale->user->membership_number
+                    : ($sale->customer_name ?? 'زائر');
+
+                $productsSummary = $sale->items->map(function ($item) {
+                    return $item->product->name . ' × ' . $item->quantity;
+                })->implode('، ');
+
+                ActivityLog::log(
+                    auth()->id(),
+                    'sale',
+                    'بيع منتجات',
+                    [
+                        'subject_type' => Sale::class,
+                        'subject_id'   => $sale->id,
+                        'details'      => 'المشتري: ' . $customerName . ' | الإجمالي: ' . $sale->total_amount . ' $',
+                        'icon'         => 'sale',
+                        'properties'   => [
+                            'message' => 'تم بيع منتجات بقيمة: ' . $sale->total_amount . ' $' .
+                                        ' | المشتري: ' . $customerName .
+                                        ' | المنتجات: ' . $productsSummary .
+                                        ' | طريقة الدفع: ' . $sale->payment_method .
+                                        ' | بواسطة: ' . $addedByName
+                        ]
+                    ]
+                );
                 return response()->json([
                     'status'  => 201,
                     'message' => 'تم البيع بنجاح',

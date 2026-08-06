@@ -131,7 +131,27 @@ class ProfileController extends Controller
             ]
         ]);
         }
-     }
+    }
+
+    // عرض هدف المتدرب الحالي بعد تسجيل الدخول
+    public function getGoal(Request $request)
+    {
+        $user = $request->user();
+
+        // تحميل علاقة الهدف الخاصة بالمستخدم
+        $user->load('goal');
+
+        return response()->json([
+            'status' => 200,
+            'message' => 'تم استرجاع الهدف بنجاح',
+            'data' => [
+                'user_id' => $user->id,
+                'goal' => $user->goal,
+                'has_goal' => !is_null($user->goal_id),
+                'has_measurements' => $user->measurements()->exists()
+            ]
+        ], 200);
+    }
 
     //..............................................................تم
     //عرض القياسات
@@ -146,7 +166,7 @@ class ProfileController extends Controller
         ], 200);
     }
  
-//تعديل او اضافة قياسات وتحديث العمر والجنس للمستخدم
+    //تعديل او اضافة قياسات وتحديث العمر والجنس للمستخدم
     public function addMeasurement(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -209,6 +229,58 @@ class ProfileController extends Controller
         ], 201);
     }
 
+    // تعديل القياسات وتحديث العمر والجنس للمستخدم الحالي عبر التوكن تلقائياً (آخر قياس)
+    public function updateMeasurements(Request $request)
+    {
+        $user = $request->user();
+
+        // حماية إضافية
+        if (in_array($user->role, ['admin', 'reception'])) {
+            return response()->json(['message' => 'غير مسموح'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'height'            => 'sometimes|required|numeric|min:100|max:250',
+            'weight'            => 'sometimes|required|numeric|min:30|max:300',
+            'fat_percentage'    => 'nullable|numeric|min:3|max:60',
+            'muscle_mass'       => 'nullable|numeric|min:10|max:120',
+        ], [
+        ]);
+
+        if ($validator->fails()) {
+            $allErrors = collect($validator->errors()->all())->implode(' - ');
+            return response()->json(['message' => $allErrors], 422);
+        }
+
+        // 1. جلب أحدث سجل قياسات خاص بهذا المستخدم تلقائياً
+        $measurement = Measurement::where('user_id', $user->id)
+            ->latest()
+            ->first();
+
+        if (!$measurement) {
+            return response()->json(['message' => 'لا يوجد سجل قياسات سابق لتعديله، قم بإضافة قياس جديد أولاً'], 404);
+        }
+
+        // 3. تحديث سجل القياسات الموجود بالبيانات الجديدة
+        $measurement->update($request->only([
+            'height', 
+            'weight', 
+            'fat_percentage', 
+            'muscle_mass'
+        ]));
+
+        return response()->json([
+            'status'  => 200,
+            'message' => 'تم تعديل القياسات وتحديث بيانات المستخدم بنجاح',
+            'data'    => [
+                'user_id' => $user->id,
+                'measurement' => $measurement,
+                'has_goal' => !is_null($user->goal_id),
+                'has_measurements' => true,
+                'profile_completed' => !is_null($user->goal_id)
+            ]
+        ], 200);
+    }
 
     //تاريخ القياسات بدءا من الاحدث لاجل الرسم البياني
     public function getHistory(Request $request)

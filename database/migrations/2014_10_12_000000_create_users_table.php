@@ -30,7 +30,7 @@ return new class extends Migration
             $table->string('otp')->nullable(); 
             $table->timestamp('email_verified_at')->nullable();
 
-            $table->enum('status', ['pending', 'active', 'rejected', 'expired', 'banned'])->default('pending'); 
+            $table->enum('status', ['pending', 'active', 'rejected', 'expired', 'banned', 'on_leave'])->default('pending'); 
             $table->string('status_reason')->nullable();
 
             $table->foreignId('goal_id')->nullable()->constrained('goals')->onDelete('set null');
