@@ -33,7 +33,7 @@ class TraineeSeeder extends Seeder
                 'gender'            => 'رجل' ,
                 'active_at'         => 1,
                 'email'             => "trainee_{$i}@gmail.com",
-                'phone'             => '96312345' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                'phone'             => '963123450' . str_pad($i, 3, '0', STR_PAD_LEFT),
                 'password'          => Hash::make('12345678'),
                 'membership_number' => 'SG-' . rand(10000, 99999),
                 'role'              => 'trainee',

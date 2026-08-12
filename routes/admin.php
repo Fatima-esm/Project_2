@@ -2,6 +2,8 @@
 
 
 use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\ProfileController;
+
 use App\Http\Controllers\Coach\CoachScheduleController;
 use App\Http\Controllers\Coach\CoachSelectionController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -28,16 +30,6 @@ use Illuminate\Support\Facades\Route;
     Route::post('dashboard/password/reset', [ForgotPasswordController::class, 'resetPassword']);
 
 
-
-    // مسارات محمية حسب الدور
-    Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
-        Route::get('/admin/dashboard', [AdminController::class, 'index']);
-    });
-
-    Route::middleware(['auth:sanctum', 'role:reception'])->group(function () {
-        Route::get('/reception/dashboard', [ReceptionController::class, 'index']);
-    });
-
     Route::middleware('auth:sanctum,admin-api')->group( function () {
         Route::post('logout', [AdminAuthController::class,'logout']) ;
     });
@@ -45,6 +37,9 @@ use Illuminate\Support\Facades\Route;
     //...................................................
 
     Route::prefix('dashboard')->middleware(['auth:sanctum', 'role:admin|reception'])->group(function () {
+
+        Route::get('/profile', [ProfileController::class, 'show']);
+        Route::post('/profile/update', [ProfileController::class, 'update']);
 
         Route::post('users/register',[UserAuthController::class,'register']);
         Route::get('users', [UserAuthController::class, 'index']);
@@ -67,6 +62,7 @@ use Illuminate\Support\Facades\Route;
 
     //admin only
     Route::prefix('dashboard')->middleware(['auth:sanctum', 'role:admin'])->group(function () {
+        
         Route::prefix('schedules')->group( function () {
         // إدارة جداول العمل: عرض الخطط
             Route::get('/all', [CoachScheduleController::class, 'index']);

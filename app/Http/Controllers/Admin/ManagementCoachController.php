@@ -32,9 +32,13 @@ class ManagementCoachController extends Controller
                 'phone'         => $coach->phone ?? 'غير متوفر',
                 'status'        => $coach->status,
                 'active_at'     => $coach->active_at,
-                'cv_url'        => $coach->coachProfile && $coach->coachProfile->cv_path 
-                                ? asset('storage/' . $coach->coachProfile->cv_path) 
-                                : null,
+                'profile_image_url' => $coach->profile_image
+                    ? asset('storage/' . $coach->profile_image)
+                    : null,
+
+                'cv_url' => $coach->coachProfile && $coach->coachProfile->cv_path
+                    ? asset('storage/' . $coach->coachProfile->cv_path)
+                    : null,
                 'created_at'    => $coach->created_at->format('Y-m-d H:i'),
             ];
         });
@@ -86,9 +90,13 @@ class ManagementCoachController extends Controller
                 'status'           => $coach->status,
                 'active_at'        => $coach->active_at,
                 'rejection_reason' => $coach->status_reason,
-                'cv_url'           => $coach->coachProfile && $coach->coachProfile->cv_path 
-                                      ? asset('storage/' . $coach->coachProfile->cv_path) 
-                                      : null,
+                'profile_image_url' => $coach->profile_image
+                    ? asset('storage/' . $coach->profile_image)
+                    : null,
+
+                'cv_url' => $coach->coachProfile && $coach->coachProfile->cv_path
+                    ? asset('storage/' . $coach->coachProfile->cv_path)
+                    : null,
                 'updated_at'       => $coach->updated_at->format('Y-m-d H:i'),
             ]
         ], 200);
@@ -116,9 +124,13 @@ class ManagementCoachController extends Controller
                 'status'        => $coach->status,
                 'active_at'     => $coach->active_at,
                 'rejection_reason' => $coach->status_reason, // سبب الرفض السابق
-                'cv_url'        => $coach->coachProfile && $coach->coachProfile->cv_path 
-                                ? asset('storage/' . $coach->coachProfile->cv_path) 
-                                : null,
+                'profile_image_url' => $coach->profile_image
+                    ? asset('storage/' . $coach->profile_image)
+                    : null,
+
+                'cv_url' => $coach->coachProfile && $coach->coachProfile->cv_path
+                    ? asset('storage/' . $coach->coachProfile->cv_path)
+                    : null,
                 'updated_at'    => $coach->updated_at->format('Y-m-d H:i'),
             ];
         });
@@ -165,9 +177,13 @@ class ManagementCoachController extends Controller
                 'status'           => $coach->status,
                 'active_at'        => $coach->active_at,
                 'rejection_reason' => $coach->status_reason, // ستكون null نظراً لأنه تم مسحها عند إعادة التفعيل
-                'cv_url'           => $coach->coachProfile && $coach->coachProfile->cv_path 
-                                    ? asset('storage/' . $coach->coachProfile->cv_path) 
-                                    : null,
+                'profile_image_url' => $coach->profile_image
+                    ? asset('storage/' . $coach->profile_image)
+                    : null,
+
+                'cv_url' => $coach->coachProfile && $coach->coachProfile->cv_path
+                    ? asset('storage/' . $coach->coachProfile->cv_path)
+                    : null,
                 'updated_at'       => $coach->updated_at->format('Y-m-d H:i'),
             ]
         ], 200);
@@ -199,10 +215,13 @@ class ManagementCoachController extends Controller
                     'email' => $coach->email,
                     'status' => $coach->status,
                     'trainees_count' => $traineesCount,  
-                    'profile_image' => $coach->profile_image ? asset('storage/' . $coach->profile_image) : null,
-                    'cv_url' => $coach->coachProfile && $coach->coachProfile->cv_path 
-                                ? asset('storage/' . $coach->coachProfile->cv_path) 
-                                : null,
+                    'profile_image_url' => $coach->profile_image
+                        ? asset('storage/' . $coach->profile_image)
+                        : null,
+
+                    'cv_url' => $coach->coachProfile && $coach->coachProfile->cv_path
+                        ? asset('storage/' . $coach->coachProfile->cv_path)
+                        : null,
             
                     'work_schedules' => $schedules,
                 ];
@@ -248,10 +267,13 @@ class ManagementCoachController extends Controller
                 'status' => $coach->status,
                 'salary' => $latestSalary ? $latestSalary->net_salary : 0, // صافي الراتب أو base_salary حسب الحاجة
                 'trainees_count' => $traineesCount,
-                'profile_image' => $coach->profile_image ? asset('storage/' . $coach->profile_image) : null,
-                'cv_url' => $coach->coachProfile && $coach->coachProfile->cv_path 
-                            ? asset('storage/' . $coach->coachProfile->cv_path) 
-                            : null,
+                'profile_image_url' => $coach->profile_image
+                    ? asset('storage/' . $coach->profile_image)
+                    : null,
+
+                'cv_url' => $coach->coachProfile && $coach->coachProfile->cv_path
+                    ? asset('storage/' . $coach->coachProfile->cv_path)
+                    : null,
                 'work_schedules' => $schedules,
             ]
         ], 200);

@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Session;
 use App\Http\Controllers\Controller;
 use App\Models\GymHall;
 use App\Models\Session;
+use App\Models\CoachSchedule;
+
 use App\Models\SessionBooking;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -16,12 +18,32 @@ class CoachSessionController extends Controller
     public function dashboard()
     {
         Session::updateExpiredSessions();
+
         $coach = auth()->user();
         if ($coach->role !== 'coach') {
             return response()->json(['message' => 'غير مصرح'], 403);
         }
 
         $today = now()->toDateString();
+        $todayArabic = match (now()->format('l')) {
+            'Saturday'  => 'السبت',
+            'Sunday'    => 'الأحد',
+            'Monday'    => 'الإثنين',
+            'Tuesday'   => 'الثلاثاء',
+            'Wednesday' => 'الأربعاء',
+            'Thursday'  => 'الخميس',
+            'Friday'    => 'الجمعة',
+            default     => '',
+        };
+
+        $coach->load('workSchedules');
+        $schedule = $coach->workSchedules->first();
+
+        // هل اليوم ضمن أيام العمل؟
+        $isWorkDay = false;
+        if ($schedule && $schedule->days) {
+            $isWorkDay = str_contains($schedule->days, $todayArabic);
+        }
 
         $todaySessions = Session::where('coach_id', $coach->id)
             ->whereDate('session_date', $today)
@@ -50,6 +72,19 @@ class CoachSessionController extends Controller
         return response()->json([
             'status' => 200,
             'data' => [
+                'coach_info' => [
+                    'name'        => $coach->full_name,
+                    'image'       => $coach->profile_image_url,
+                    'work_days'  => $schedule->days ?? null,           // الأحد-الخميس
+                    'day_status' => $isWorkDay ? 'دوام' : 'إجازة',
+                    'work_name'  => $schedule->work_name ?? null,      // صباحي / مسائي
+                    'start_time' => $schedule
+                        ? substr((string) $schedule->start_time, 0, 5)
+                        : null,
+                    'end_time'   => $schedule
+                        ? substr((string) $schedule->end_time, 0, 5)
+                        : null,
+                ],
                 'today_sessions'      => $todaySessions,
                 'trainees_count'      => $traineesCount,
                 'upcoming_group'      => $upcomingGroup,
@@ -57,7 +92,7 @@ class CoachSessionController extends Controller
                 'attendance_rate'     => $attendanceRate,
             ],
         ]);
-    }
+    }  
 
     // إنشاء جلسة
     public function store(Request $request)
@@ -188,7 +223,6 @@ class CoachSessionController extends Controller
             return response()->json(['message' => 'لا يمكن تعديل جلسة منتهية أو ملغية مسبقاً'], 400);
         }
 
-        // التحقق مما إذا كان هناك متدربون قد قاموا بحجز الجلسة
         $hasBookings = $session->bookings()->whereIn('status', ['booked', 'attended'])->exists();
 
         if ($hasBookings) {
@@ -227,14 +261,12 @@ class CoachSessionController extends Controller
             return response()->json(['message' => $allErrors], 422);
         }
 
-        // تحديد القيم الجديدة أو القديمة في حال لم تُرسل في الطلب
         $hallId     = $request->filled('hall_id') ? $request->hall_id : $session->hall_id;
         $sessionDate = $request->filled('session_date') ? $request->session_date : $session->session_date->format('Y-m-d');
         $startTime  = $request->filled('start_time') ? $request->start_time : substr((string) $session->start_time, 0, 5);
         $endTime    = $request->filled('end_time') ? $request->end_time : substr((string) $session->end_time, 0, 5);
         $type       = $request->filled('type') ? $request->type : $session->type;
 
-        // التحقق من أن الوقت الجديد ليس في الماضي
         $sessionStart = Carbon::parse($sessionDate . ' ' . $startTime);
         if ($sessionStart->lt(now())) {
             return response()->json(['message' => 'لا يمكن تعديل الجلسة لتكون في وقت قد مضى'], 400);
@@ -242,17 +274,14 @@ class CoachSessionController extends Controller
 
         $hall = GymHall::findOrFail($hallId);
 
-        // مطابقة نوع الصالة مع نوع الجلسة
         if ($hall->type !== $type) {
             return response()->json(['message' => 'نوع الصالة لا يطابق نوع الجلسة (جماعية / فردية)'], 422);
         }
 
-        // فحص التعارض للصالة (استثناء الجلسة الحالية من الفحص)
         if (Session::hasHallConflict($hall->id, $sessionDate, $startTime, $endTime, $session->id)) {
             return response()->json(['message' => 'الصالة محجوزة في هذا الوقت من قبل جلسة أخرى'], 400);
         }
 
-        // فحص التعارض للكوتش (استثناء الجلسة الحالية من الفحص)
         if (Session::hasCoachConflict($coach->id, $sessionDate, $startTime, $endTime, $session->id)) {
             return response()->json(['message' => 'لديك جلسة أخرى متعارضة في نفس الوقت'], 400);
         }
@@ -333,9 +362,6 @@ class CoachSessionController extends Controller
         ]);
     }
 
-    /**
-     * تسجيل حضور المتدربين وإتمام الجلسة في نفس الوقت بواسطة الكوتش
-     */
     public function markAttendance(Request $request, $sessionId)
     {
         $coach = auth()->user();
@@ -402,37 +428,6 @@ class CoachSessionController extends Controller
         ]);
     }
 
-    // public function markAttendance(Request $request, $id)
-    // {
-    //     $coach = auth()->user();
-    //     $session = Session::find($id);
-
-    //     if (!$session || $session->coach_id !== $coach->id) {
-    //         return response()->json(['message' => 'الجلسة غير موجودة'], 404);
-    //     }
-
-    //     $request->validate([
-    //         'attendances'              => 'required|array',
-    //         'attendances.*.booking_id' => 'required|exists:session_bookings,id',
-    //         'attendances.*.status'     => 'required|in:attended,no_show',
-    //     ]);
-
-    //     foreach ($request->attendances as $item) {
-    //         $booking = SessionBooking::where('id', $item['booking_id'])
-    //             ->where('session_id', $session->id)
-    //             ->first();
-
-    //         if ($booking) {
-    //             $booking->update([
-    //                 'status'      => $item['status'],
-    //                 'attended_at' => $item['status'] === 'attended' ? now() : null,
-    //             ]);
-    //         }
-    //     }
-
-    //     return response()->json(['status' => 200, 'message' => 'تم تسجيل الحضور بنجاح']);
-    // }
-
     public function cancel($id)
     {
         $coach = auth()->user();
@@ -442,15 +437,31 @@ class CoachSessionController extends Controller
             return response()->json(['message' => 'الجلسة غير موجودة'], 404);
         }
 
-        if ($session->status='cancelled'){
-            return response()->json(['message' => 'الجلسة ملغية بالفعل'], 404);
+        if ($session->status === 'cancelled') {
+            return response()->json(['message' => 'الجلسة ملغية بالفعل'], 400);
+        }
+
+        if ($session->status === 'completed') {
+            return response()->json(['message' => 'لا يمكن إلغاء جلسة مكتملة'], 400);
+        }
+
+        $dateOnly = \Carbon\Carbon::parse($session->session_date)->format('Y-m-d');
+        $sessionDateTime = \Carbon\Carbon::parse($dateOnly . ' ' . $session->start_time);
+
+        $minAllowedTime = now()->addHours(2);
+
+        if ($sessionDateTime->isPast() || $sessionDateTime->lessThan($minAllowedTime)) {
+            return response()->json([
+                'message' => 'عذراً، لا يمكن إلغاء الجلسة لأنها بدأت بالفعل أو لم يتبقَ على بدئها ساعتان'
+            ], 403);
         }
 
         $session->update(['status' => 'cancelled']);
+        
+        $session->bookings()->update(['status' => 'cancelled']);
 
-        return response()->json(['status' => 200, 'message' => 'تم إلغاء الجلسة']);
+        return response()->json(['status' => 200, 'message' => 'تم إلغاء الجلسة بنجاح']);
     }
-
 
     private function individualWeekLimitReached(int $traineeId, string $sessionDate): bool
     {

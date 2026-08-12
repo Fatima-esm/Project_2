@@ -234,7 +234,7 @@ class ProductController extends Controller
             'user_id'         => 'nullable|exists:users,id',
             'customer_name'   => 'required_without:user_id|string|max:255',
             'customer_phone'  => 'nullable|string|max:20',
-            'payment_method'  => 'required|in:cash,card,transfer',
+            'payment_method'  => 'required|in:cash,card,online,bank',
             'notes'           => 'nullable|string',
             'items'           => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',

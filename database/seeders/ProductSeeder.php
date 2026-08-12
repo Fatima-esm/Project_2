@@ -3,41 +3,90 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Product; // تأكد من إنشاء نموذج Product إذا لم يكن موجوداً
+use App\Models\Product;
 
 class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        // قائمة ببعض منتجات الجيم والرياضة لتبدو البيانات واقعية
-        $gymProducts = [
-            'م,شرب بروتين واي',
-            'كرياتين نقي',
-            'أحماض أمينية BCAA',
-            'حزام رفع أثقال جلد',
-            'أشرطة معصم للرفع',
-            'قفازات تمارين حديد',
-            'دمبل قابل للتعديل',
-            'حبل مقاومة مطاطي',
-            'سجادة تمارين يوغا',
-            'زجاجة مياه رياضية (شيكر)',
-            'حارق دهون ليدو',
-            'فيتامين متعدد (Multi-Vitamin)',
-            'طوق قفز للحبل',
-            'أسطوانة فوم للمساج والعضلات',
-            'حزام تخسيس للخصر',
+        $products = [
+            [
+                'name'           => 'دمبل قابل للتعديل مع بار',
+                'price'          => 180.00,
+                'stock_quantity' => 15,
+                'description'    => 'طقم دمبل قابل لتعديل الأوزان مع بار تمرين، مناسب لتقوية العضلات في المنزل والنادي.',
+                'image'          => 'products/1.png',
+            ],
+            [
+                'name'           => 'طقم بار تمارين مع أوزان 30',
+                'price'          => 200.00,
+                'stock_quantity' => 10,
+                'description'    => 'بار مستقيم وبار EZ مع أوزان 30 كغ، مثالي لتمارين الصدر والذراعين والظهر.',
+                'image'          => 'products/2.png',
+            ],
+            [
+                'name'           => 'جهاز مشي كهربائي احترافي',
+                'price'          => 1500.00,
+                'stock_quantity' => 5,
+                'description'    => 'جهاز مشي كهربائي بشاشة عرض ومقابض أمان، مناسب للجري والمشي اليومي.',
+                'image'          => 'products/3.png',
+            ],
+            [
+                'name'           => 'جهاز مشي منزلي قابل للطي',
+                'price'          => 900.00,
+                'stock_quantity' => 8,
+                'description'    => 'جهاز مشي مدمج بمقبض قابل للتعديل، خفيف وسهل التخزين في المنزل.',
+                'image'          => 'products/4.png',
+            ],
+            [
+                'name'           => 'جهاز مشي مكتبي صغير',
+                'price'          => 650.00,
+                'stock_quantity' => 12,
+                'description'    => 'مشاية مسطحة للاستخدام تحت المكتب أو في المساحات الصغيرة، هادئة وسهلة النقل.',
+                'image'          => 'products/5.png',
+            ],
+            [
+                'name'           => 'سجادة يوغا وتمرين',
+                'price'          => 55.00,
+                'stock_quantity' => 40,
+                'description'    => 'سجادة يوغا مزدوجة الوجه مانعة للانزلاق، مثالية للتمارين الأرضية والإطالة.',
+                'image'          => 'products/6.png',
+            ],
+            [
+                'name'           => 'جهاز صعود الدرج الرياضي',
+                'price'          => 2200.00,
+                'stock_quantity' => 4,
+                'description'    => 'جهاز ستيبر احترافي بشاشة لمس، لتقوية الساقين وتحسين اللياقة القلبية.',
+                'image'          => 'products/7.png',
+            ],
+            [
+                'name'           => 'ميزان جسم رقمي',
+                'price'          => 70.00,
+                'stock_quantity' => 25,
+                'description'    => 'ميزان إلكتروني زجاجي بدقة عالية لمتابعة الوزن بشكل يومي.',
+                'image'          => 'products/8.png',
+            ],
+            [
+                'name'           => 'حبل قفز رياضي',
+                'price'          => 35.00,
+                'stock_quantity' => 50,
+                'description'    => 'حبل قفز بمقابض مريحة، ممتاز لتمارين الكارديو وحرق الدهون.',
+                'image'          => 'products/9.png',
+            ],
+            [
+                'name'           => 'زجاجة ماء رياضية',
+                'price'          => 25.00,
+                'stock_quantity' => 60,
+                'description'    => 'زجاجة ماء بسعة كبيرة وغطاء محكم، مناسبة للتمرين والنشاط اليومي.',
+                'image'          => 'products/10.png',
+            ],
         ];
 
-        for ($i = 1; $i <= 25; $i++) {
-            $productName = $gymProducts[array_rand($gymProducts)] . ' - طراز ' . $i;
-
-            Product::create([
-                'name'           => $productName,
-                'price'          => rand(50, 200), // سعر عشوائي بين 15 و 300
-                'stock_quantity' => rand(5, 40),  // كمية متوفرة عشوائية بين 5 و 100
-                'description'    => 'منتج عالي الجودة مصمم خصيصاً لمساعدة الرياضيين على تحقيق أهدافهم في اللياقة البدنية وبناء العضلات.',
-                'image'          => null,          
-            ]);
+        foreach ($products as $product) {
+            Product::updateOrCreate(
+                ['name' => $product['name']],
+                $product
+            );
         }
     }
 }

@@ -11,6 +11,7 @@ use App\Http\Controllers\Payment\SubscriptionController;
 use App\Http\Controllers\ClubPage\ClubActivityController;
 use App\Http\Controllers\Product\ProductController;
 
+use App\Http\Controllers\ClubPage\GymHallController;
 use App\Http\Controllers\Coach\CoachSelectionController;
 use App\Http\Controllers\Coach\TraineeController;
 use App\Http\Controllers\Coach\WorkoutPlanController;

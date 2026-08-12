@@ -48,21 +48,26 @@ class User extends Authenticatable
 
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
+    protected $appends = ['profile_image_url']; // ✅ وليس profile_image
+
+    public function getProfileImageUrlAttribute()
+    {
+        if (!$this->profile_image) {
+            return null;
+        }
+
+        if (str_starts_with($this->profile_image, 'http')) {
+            return $this->profile_image;
+        }
+
+        return asset('storage/' . $this->profile_image);
+    }
+    
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
 
     protected $casts = [
         'email_verified_at' => 'datetime',

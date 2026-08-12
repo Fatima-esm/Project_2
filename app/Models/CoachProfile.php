@@ -21,4 +21,21 @@ class CoachProfile extends Model
     {
         return $this->belongsTo(User::class);
     }
+    protected $appends = ['cv_url'];
+
+    public function getCvUrlAttribute()
+    {
+        if (!$this->cv_path) {
+            return null;
+        }
+
+        if (str_starts_with($this->cv_path, 'http')) {
+            return $this->cv_path;
+        }
+
+        return asset('storage/' . $this->cv_path);
+    }
+
+
+
 }

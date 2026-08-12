@@ -21,7 +21,7 @@ class AdminSeeder extends Seeder
         $admin = User::create([
             'full_name' => 'Admin',
             'email' => 'admin@gmail.com',
-            'phone' => '09876540321',
+            'phone' => '936876540321',
             'password' => bcrypt('12345678'),
             'role' => 'admin',
             'active_at' => 1,
@@ -36,7 +36,7 @@ class AdminSeeder extends Seeder
             [
                 'full_name' => 'Reception 1',
                 'email' => 'reception1@gmail.com',
-                'phone' => '0987654322',
+                'phone' => '963876543222',
                 'password' => bcrypt('12345678'),
                 'role' => 'reception',
                 'status' => 'active',
@@ -47,7 +47,7 @@ class AdminSeeder extends Seeder
             [
                 'full_name' => 'Reception 2',
                 'email' => 'reception2@gmail.com',
-                'phone' => '09876504323',
+                'phone' => '963876504323',
                 'password' => bcrypt('12345678'),
                 'role' => 'reception',
                 'status' => 'active',
@@ -58,7 +58,7 @@ class AdminSeeder extends Seeder
             [
                 'full_name' => 'Reception 3',
                 'email' => 'reception3@gmail.com',
-                'phone' => '09876500323',
+                'phone' => '963876500323',
                 'password' => bcrypt('12345678'),
                 'role' => 'reception',
                 'status' => 'active',
