@@ -35,6 +35,19 @@ class Product extends Model
         };
     }
     
-    protected $appends = ['status_label'];
+    protected $appends = ['status_label', 'image_url'];
 
-}
+    public function getImageUrlAttribute()
+    {
+        if (!$this->image) {
+            return null;
+        }
+
+        if (str_starts_with($this->image, 'http')) {
+            return $this->image;
+        }
+
+        return asset('storage/' . $this->image);
+    }
+    
+    }

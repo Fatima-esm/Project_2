@@ -127,7 +127,6 @@ class SubscriptionController extends Controller
             'status' => 200,
             'message' => 'تم ارسال طلب الاشتراك. يرجى إتمام الدفع.',
             'subscription' => $subscription->load('plan'),
-            'plan' => $plan
         ]);
 
     }

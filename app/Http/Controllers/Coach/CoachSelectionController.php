@@ -17,6 +17,7 @@ class CoachSelectionController extends Controller
     public function index()
     {
         $coaches = User::where('role', 'coach')
+            ->where('status', 'active')
             ->with('workSchedules') 
             ->get()
             ->map(function ($coach) {
@@ -38,7 +39,9 @@ class CoachSelectionController extends Controller
                     'phone' => $coach->phone,
                     'email' => $coach->email,
                     'status' => $coach->status,
-                    'trainees_count' => $traineesCount,               
+                    'profile_image' => $coach->profile_image ? asset('storage/' . $coach->profile_image) : null,
+                    'trainees_count' => $traineesCount, 
+                    'is_available' => $coach->isAvailableForTrainees(),
                     'work_schedules' => $schedules, 
                                       
                 ];
@@ -51,27 +54,65 @@ class CoachSelectionController extends Controller
         ]);
     }
 
-    //details coach
-
+    // details coach
     public function show($id)
     {
-        $coach = User::with('workSchedules')
-            ->where('role', 'coach')
+        $coach = User::where('role', 'coach')
+            ->with(['workSchedules', 'coachProfile', 'salaries'])
             ->findOrFail($id);
+
         $traineesCount = User::where('coach_id', $coach->id)->count();
 
+        $schedules = $coach->workSchedules->map(function ($schedule) {
+            return [
+                'id' => $schedule->id,
+                'days' => $schedule->days,
+                'work_name' => $schedule->work_name,
+                'start_time' => $schedule->start_time,
+                'end_time' => $schedule->end_time,
+            ];
+        });
+
+        // جلب أحدث راتب مسجل للكوتش من جدول salaries
+        $latestSalary = $coach->salaries->sortByDesc('created_at')->first();
+        $profile = $coach->coachProfile;
 
         return response()->json([
             'status' => 200,
             'message' => 'تم جلب تفاصيل الكوتش بنجاح',
             'data' => [
-                'traineesCount'=>$traineesCount,
-                'coachs' => $coach,
-
+                'id' => $coach->id,
+                'membership_number' => $coach->membership_number,
+                'full_name' => $coach->full_name,
+                'email' => $coach->email,
+                'phone' => $coach->phone,
+                'gender' => $coach->gender,
+                'age' => $coach->age,
+                'status' => $coach->status,
+                'status_reason' => $coach->status_reason,
+                'active_at' => $coach->active_at,
+                'profile_image' => $coach->profile_image ? asset('storage/' . $coach->profile_image) : null,
+                'salary' => $latestSalary ? $latestSalary->net_salary : 0,
+                'trainees_count' => $traineesCount,
+                'is_available' => $coach->isAvailableForTrainees(),
+                'profile_image' => $coach->profile_image ? asset('storage/' . $coach->profile_image) : null,
+                
+                // تفاصيل جدول coach_profiles
+                'years_of_experience' => $profile->years_of_experience ?? null,
+                'about_me' => $profile->about_me ?? $coach->about_me,
+                'certificates_and_credits' => $profile->certificates_and_credits ?? null,
+                'cv_url' => $profile && $profile->cv_path ? asset('storage/' . $profile->cv_path) : null,
+                'id_card_image' => $profile && $profile->id_card_image ? asset('storage/' . $profile->id_card_image) : null,
+                
+                'created_at' => $coach->created_at ? $coach->created_at->format('Y-m-d H:i:s') : null,
+                'updated_at' => $coach->updated_at ? $coach->updated_at->format('Y-m-d H:i:s') : null,
+                // جداول العمل
+                'work_schedules' => $schedules,
+                
             ]
-        ]);
+        ], 200);
     }
-
+    
     // اختيار كوتش من قبل المتدرب
     public function selectCoach(Request $request)
     {
@@ -85,7 +126,7 @@ class CoachSelectionController extends Controller
         if ($user->coach_id) {
             return response()->json([
                 'status' => 400,
-                'message' => 'لديه كوتش بالفعل. لا يمكنك اختيار كوتش جديد بشكل مباشر، يرجى تقديم طلب تغيير كوتش.'
+                'message' => 'لديك كوتش بالفعل. لا يمكنك اختيار كوتش جديد بشكل مباشر، يرجى تقديم طلب تغيير كوتش من ادارة النادي.'
             ], 400);
         }
 
@@ -117,16 +158,15 @@ class CoachSelectionController extends Controller
             ], 400);
         }
 
-        // 3. التحقق من عدد المتدربين الحاليين لهذا الكوتش (الحد الأقصى 20)
-        $traineesCount = User::where('coach_id', $coachId)->count();
+        $AvailableForTrainees = $coach->isAvailableForTrainees();
 
-        if ($traineesCount >= 20) {
+        if (!$AvailableForTrainees) {
             return response()->json([
-                'status' => 400,
-                'message' => 'عذراً، لقد وصل هذا الكوتش إلى الحد الأقصى من المتدربين (20 متدرباً). يرجى اختيار كوتش آخر.'
+                'status'  => 400,
+                'message' => 'عذراً، لقد وصل هذا الكوتش إلى الحد الأقصى من المتدربين. يرجى اختيار كوتش آخر.'
             ], 400);
         }
-
+        
         // 4. ربط المتدرب بالكوتش المختار
         $user->coach_id = $coachId;
         $user->save();

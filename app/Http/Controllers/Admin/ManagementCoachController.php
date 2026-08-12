@@ -199,6 +199,7 @@ class ManagementCoachController extends Controller
                     'email' => $coach->email,
                     'status' => $coach->status,
                     'trainees_count' => $traineesCount,  
+                    'profile_image' => $coach->profile_image ? asset('storage/' . $coach->profile_image) : null,
                     'cv_url' => $coach->coachProfile && $coach->coachProfile->cv_path 
                                 ? asset('storage/' . $coach->coachProfile->cv_path) 
                                 : null,
@@ -247,6 +248,7 @@ class ManagementCoachController extends Controller
                 'status' => $coach->status,
                 'salary' => $latestSalary ? $latestSalary->net_salary : 0, // صافي الراتب أو base_salary حسب الحاجة
                 'trainees_count' => $traineesCount,
+                'profile_image' => $coach->profile_image ? asset('storage/' . $coach->profile_image) : null,
                 'cv_url' => $coach->coachProfile && $coach->coachProfile->cv_path 
                             ? asset('storage/' . $coach->coachProfile->cv_path) 
                             : null,

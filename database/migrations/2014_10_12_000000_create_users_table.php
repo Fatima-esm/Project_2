@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('membership_number')->unique();
             $table->string('about_me')->nullable();
 
+
             $table->enum('role', ['admin', 'reception', 'coach', 'trainee']);
             $table->foreignId('coach_id')->nullable()->constrained('users')->onDelete('set null');
             
@@ -35,6 +36,9 @@ return new class extends Migration
 
             $table->foreignId('goal_id')->nullable()->constrained('goals')->onDelete('set null');
             
+            $table->integer('session_cancel_count')->default(0);
+            $table->timestamp('booking_banned_until')->nullable();
+
             $table->rememberToken();
             $table->softDeletes();
             $table->timestamps();

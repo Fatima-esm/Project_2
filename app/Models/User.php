@@ -42,7 +42,9 @@ class User extends Authenticatable
         'gender',
         'membership_number', 
         'coach_id',
-        'about_me'
+        'about_me',
+        'session_cancel_count',
+        'booking_banned_until',
 
     ];
 
@@ -65,6 +67,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'booking_banned_until' => 'datetime',
     ];
 
     public function coachProfile() {
@@ -108,7 +111,18 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'coach_id');
     }
 
-    //  قائمة المتدربين التابعين للمدرب
+    public function isAvailableForTrainees(): bool
+    {
+        if ($this->role !== 'coach' || $this->status !== 'active') {
+            return false;
+        }
+
+        $traineesCount = self::where('coach_id', $this->id)->count();
+
+        // إرجاع true إذا كان أقل من الحد الأقصى (20)
+        return $traineesCount < 20;
+    }
+
     public function trainees() {
         return $this->hasMany(User::class, 'coach_id');
     }
@@ -136,5 +150,15 @@ class User extends Authenticatable
         return LogOptions::defaults()
             ->logAll(['full_name','email', 'status']) // أو يمكنك تحديد حقول معينة لتخفيف الحجم ->logOnly(['full_name', 'status'])
             ->logOnlyDirty(); // تسجيل التغييرات الفعلية فقط
+    }
+
+    public function coachedSessions()
+    {
+        return $this->hasMany(Session::class, 'coach_id');
+    }
+
+    public function sessionBookings()
+    {
+        return $this->hasMany(SessionBooking::class);
     }
 }

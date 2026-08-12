@@ -8,6 +8,8 @@ use App\Http\Requests\Transaction\VerifyTransactionRequest;
 use App\Services\TransactionService;
 use App\Models\Subscription;
 use App\Models\Transaction;
+use App\Models\ClubDetail;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -40,7 +42,8 @@ class TransactionController extends Controller
             return response()->json(['status' => 400, 'message' => 'No pending subscription found.'], 400);
         }
 
-        $companyPhone = '05551234567';
+        $clubDetail = ClubDetail::first();
+        $companyPhone = $clubDetail ? $clubDetail->phone : null;
 
         // 3. إنشاء المعاملة (مع قيم ثابتة لا يمكن للمستخدم تغييرها)
         $transaction = Transaction::create([
@@ -51,25 +54,26 @@ class TransactionController extends Controller
             'company_phone'      => $companyPhone,       // ثابت من الكود
             'sender_phone'       => $request->sender_phone,
             'sender_name'        => $request->sender_name,
+            'payment_method'     => 'bank',
             'notes'              => $request->notes ?? 'دفع اشتراك',
             'status'             => 'pending',
         ]);
 
-        // 4. الرد على المستخدم
+        // 4. الرد على المستخدم مع التفاصيل المحدثة
         return response()->json([
             'status' => 200,
             'message' => 'تم تحويل المبلغ المطلوب بنجاح.. قم بحفظ رقم المعاملة للتحقق من الدفع لاحقا',
             'data' => [
                 'transaction_number' => $transaction->transaction_number,
                 'subscription_name'  => $subscription->plan->name ?? 'Plan',
-                'amount'             => $transaction->amount,
-                'sender_name'        => $transaction->sender_name,
-                'sender_phone'       => $transaction->sender_phone,
-
+                'amount'             => $transaction->amount, // المبلغ المدفوع
+                'payment_method'     => $transaction->payment_method ?? 'تحويل بنكي', // طريقة الدفع
+                'sender_name'        => $transaction->sender_name, // اسم المرسل
+                'sender_phone'       => $transaction->sender_phone, // رقم المرسل
+                'date'               => $transaction->created_at->toDateTimeString(), // تاريخ المعاملة
             ]
         ]);
     }
-
 
     // 4 verify transaction num
    public function verify(Request $request)

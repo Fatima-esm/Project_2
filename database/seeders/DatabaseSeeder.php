@@ -37,7 +37,9 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             CategoryAndExerciseSeeder::class, // أضف هذا السطر هنا
-        ]);
+            ClubDetailsSeeder::class,
+            GymHallsSeeder::class,
+            ]);
         
         $this->call(WorkScheduleSeeder::class);
 

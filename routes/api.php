@@ -8,14 +8,16 @@ use App\Http\Controllers\Payment\PlanController;
 use App\Http\Controllers\Payment\PaymentController;
 use App\Http\Controllers\Payment\TransactionController;
 use App\Http\Controllers\Payment\SubscriptionController;
-
+use App\Http\Controllers\ClubPage\ClubActivityController;
 use App\Http\Controllers\Product\ProductController;
 
 use App\Http\Controllers\Coach\CoachSelectionController;
 use App\Http\Controllers\Coach\TraineeController;
 use App\Http\Controllers\Coach\WorkoutPlanController;
-
 use App\Http\Controllers\Auth\ForgotPasswordController;
+
+use App\Http\Controllers\Session\TraineeSessionController;
+use App\Http\Controllers\Session\CoachSessionController;
 
 use App\Http\Controllers\User\UserAuthController;
 use Illuminate\Http\Request;
@@ -53,6 +55,9 @@ use App\Http\Controllers\MeasurementController;
     Route::middleware(['auth:sanctum', 'role:trainee|coach'])->group(function () {
     // باقي خدمات النادي
 
+    Route::get('/club/details', [ClubActivityController::class, 'getClubDetails']);
+    //Route::post('/admin/club/details', [ClubDetailController::class, 'updateClubDetails']);
+
         Route::middleware('check.subscription')->group(function () {
             Route::get('exercises', [ExercisesController::class, 'index']);
 
@@ -72,8 +77,28 @@ use App\Http\Controllers\MeasurementController;
             Route::get('/user/measurements/history', [ProfileController::class, 'getHistory']);
             Route::get('/user/goal/', [ProfileController::class, 'getGoal']);
 
-
+            // مسارات المتدرب
+            Route::middleware(['auth:sanctum', 'role:trainee'])->prefix('trainee')->group(function () {
+                Route::get('/sessions/available', [TraineeSessionController::class, 'available']);
+                Route::post('/sessions/{id}/book', [TraineeSessionController::class, 'book']);
+                Route::post('/sessions/bookings/{id}/cancel', [TraineeSessionController::class, 'cancel']);
+                Route::get('/sessions/bookings', [TraineeSessionController::class, 'myBookings']);
+            });
         });
+
+            // مسارات الكوتش
+    Route::middleware(['auth:sanctum', 'role:coach'])->prefix('coach')->group(function () {
+        //sessions
+        Route::get('gym-halls/get', [GymHallController::class, 'index']);
+        Route::get('/sessions/dashboard', [CoachSessionController::class, 'dashboard']);
+        Route::post('/sessions', [CoachSessionController::class, 'store']);
+        Route::post('/sessions/{id}/update', [CoachSessionController::class, 'update']);
+        Route::get('/sessions', [CoachSessionController::class, 'mySessions']);
+        Route::get('/sessions/{id}', [CoachSessionController::class, 'show']);
+        Route::post('/sessions/{id}/attendance', [CoachSessionController::class, 'markAttendance']);
+        Route::post('/sessions/{id}/cancel', [CoachSessionController::class, 'cancel']);
+    });
+
 
     // 1. الملف الشخصي + QR Code   تم*
     Route::get('/user/profile', [ProfileController::class, 'show']);

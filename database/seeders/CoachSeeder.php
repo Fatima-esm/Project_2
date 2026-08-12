@@ -12,7 +12,7 @@ class CoachSeeder extends Seeder
     public function run(): void
     {
         // مصفوفة البيانات الأساسية للكوتشز مع التفاصيل الإضافية والسيرة الذاتية
-        $coaches = [
+       $coaches = [
             [
                 'user' => [
                     'full_name'         => 'سمير احمد',
@@ -26,6 +26,7 @@ class CoachSeeder extends Seeder
                     'active_at'         => 1,
                     'email_verified_at' => now(),
                     'membership_number' => 'SG-20011',
+                    'profile_image'     => 'profiles/sameer.jpg',
                 ],
                 'profile' => [
                     'years_of_experience'      => 5,
@@ -47,6 +48,7 @@ class CoachSeeder extends Seeder
                     'active_at'         => 1,
                     'email_verified_at' => now(),
                     'membership_number' => 'SG-20012',
+                    'profile_image'     => 'profiles/ali.jpg',
                 ],
                 'profile' => [
                     'years_of_experience'      => 4,
@@ -68,6 +70,7 @@ class CoachSeeder extends Seeder
                     'active_at'         => 1,
                     'email_verified_at' => now(),
                     'membership_number' => 'SG-20013',
+                    'profile_image'     => 'profiles/feras.jpg',
                 ],
                 'profile' => [
                     'years_of_experience'      => 8,
@@ -89,6 +92,7 @@ class CoachSeeder extends Seeder
                     'active_at'         => 1,
                     'email_verified_at' => now(),
                     'membership_number' => 'SG-20014',
+                    'profile_image'     => 'profiles/ahmad.jpg',
                 ],
                 'profile' => [
                     'years_of_experience'      => 10,
@@ -110,6 +114,7 @@ class CoachSeeder extends Seeder
                     'active_at'         => 0,
                     'email_verified_at' => now(),
                     'membership_number' => 'SG-20015',
+                    'profile_image'     => 'profiles/saad.jpg',
                 ],
                 'profile' => [
                     'years_of_experience'      => 3,
@@ -131,6 +136,7 @@ class CoachSeeder extends Seeder
                     'active_at'         => 0,
                     'email_verified_at' => now(),
                     'membership_number' => 'SG-20016',
+                    'profile_image'     => 'profiles/mohammad.jpg',
                 ],
                 'profile' => [
                     'years_of_experience'      => 6,

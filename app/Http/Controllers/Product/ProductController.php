@@ -18,18 +18,16 @@ class ProductController extends Controller
     //اضافة منتج من قبل الادمن
     public function storeProduct(Request $request)
     {
-        // 1. التحقق من الصلاحيات (أدمن فقط)
         if (auth()->user()->role !== 'admin') {
             return response()->json(['message' => 'غير مصرح لك بالوصول، هذه الصلاحية للأدمن فقط'], 403);
         }
 
-        // 2. التحقق من صحة المدخلات
         $validator = Validator::make($request->all(), [
             'name'           => 'required|string|max:255',
             'price'          => 'required|numeric|min:0',
             'stock_quantity' => 'required|integer|min:0',
             'description'    => 'nullable|string',
-            'image'          => 'required|image|mimes:jpeg,png,jpg,webp|max:2048', // رفع صورة بحجم أقصى 2 ميجابايت
+            'image'          => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -39,36 +37,34 @@ class ProductController extends Controller
         try {
             $imagePath = null;
 
-            // 3. معالجة وتخزين الصورة إن وجدت
             if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('products', 'public'); 
-                // سيتم حفظها في storage/app/public/products ويمكن الوصول لها عبر الرابط
+                // يحفظ: products/xxxxx.jpg
+                $imagePath = $request->file('image')->store('products', 'public');
             }
 
-            // 4. إنشاء المنتج في قاعدة البيانات
             $product = Product::create([
                 'name'           => $request->name,
                 'price'          => $request->price,
                 'stock_quantity' => $request->stock_quantity,
                 'description'    => $request->description,
-                'image'          => $imagePath ? asset('storage/' . $imagePath) : null, // رابط الصورة الكامل
+                'image'          => $imagePath, // مسار نسبي فقط
             ]);
 
             return response()->json([
-                'status' => 201,
+                'status'  => 201,
                 'message' => 'تم إضافة المنتج بنجاح',
-                'data' => $product
+                'data'    => $product, // image_url يظهر تلقائياً من الـ Accessor
             ], 201);
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 500,
+                'status'  => 500,
                 'message' => 'حدث خطأ أثناء رفع المنتج',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
-
+    
     //تعديل بيانات منتج الادمن
     public function updateProduct(Request $request, $id)
     {

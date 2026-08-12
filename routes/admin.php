@@ -9,7 +9,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\User\UserAuthController;
 use App\Http\Controllers\Payment\SubscriptionController;
 use App\Http\Controllers\Product\ProductController;
-
+use App\Http\Controllers\ClubPage\GymHallController;
 use App\Http\Controllers\Admin\ManagementCoachController;
 use App\Http\Controllers\Admin\SalaryController;
 use Illuminate\Http\Request;
@@ -57,6 +57,11 @@ use Illuminate\Support\Facades\Route;
         Route::post('/products/sales', [ProductController::class, 'sellProducts']);    
         Route::get('/sales/all', [ProductController::class, 'indexSales']);
         Route::get('/sales/{id}', [ProductController::class, 'showSale']);
+
+        //gym-halls
+        Route::get('gym-halls/all', [GymHallController::class, 'index']);
+        Route::get('gym-halls/{id}/details', [GymHallController::class, 'show']);
+
     
     });
 
@@ -76,6 +81,13 @@ use Illuminate\Support\Facades\Route;
             Route::get('/Staff/{user_id}', [CoachScheduleController::class, 'showStaffSchedules']);
             Route::post('/Staff/update/{user_id}', [CoachScheduleController::class, 'updateStaffSchedules']);
             Route::get('/staff/schedules-report', [CoachScheduleController::class, 'getAllStaffWithSchedules']);
+        });
+
+        Route::prefix('gym-halls')->group(function () {
+            // عرض جميع الصالات
+            Route::post('/add', [GymHallController::class, 'store']);
+            Route::post('/{id}/update', [GymHallController::class, 'update']);
+            Route::delete('/{id}/delete', [GymHallController::class, 'destroy']);
         });
 
         Route::middleware(['auth:sanctum'])->prefix('admin/receptionists')->group(function () {

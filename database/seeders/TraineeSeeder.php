@@ -14,8 +14,10 @@ class TraineeSeeder extends Seeder
     public function run(): void
     {
         // 1. جلب جميع الكوتشز المتاحين لاختيار أحدهم عشوائياً لكل متدرب
-        $coaches = User::where('role', 'coach')->get();
-
+        $coaches = User::where('role', 'coach')
+                        ->where('status', 'active')
+                        ->get();
+                        
         if ($coaches->isEmpty()) {
             return; // إن لم يكن هناك كوتشز، يتم إيقاف السيدر لتجنب الأخطاء
         }
