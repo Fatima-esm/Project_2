@@ -429,7 +429,7 @@ class AdminReceptionistController extends Controller
         ]);
     }
 
-// 1. عرض الاشتراكات التي أنشأها موظف الاستقبال اعتماداً على سجل النشاطات (Activity Log)
+    // 1. عرض الاشتراكات التي أنشأها موظف الاستقبال اعتماداً على سجل النشاطات (Activity Log)
     public function receptionistSubscriptions(Request $request, $id): \Illuminate\Http\JsonResponse
     {
         $admin = auth()->user();

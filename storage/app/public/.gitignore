@@ -1,2 +1,12 @@
 *
+!products/
+!products/*
+!cvs/
+!cvs/*
+!images/
+!images/*
+!products/
+!products/*
+!profiles/
+!profiles/*
 !.gitignore
