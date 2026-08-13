@@ -233,11 +233,12 @@ class UserAuthController extends Controller
                 'membership_number' => $user->membership_number, 
                 'full_name' => $user->full_name, 
                 'phone' => $user->phone, 
-                'subscriPtion' => ($activeSub && $activeSub->plan) ? $activeSub->plan->name : 'بدون باقة', // الباقة الحالية (ستظهر Free Trial أو غيرها)
-                'coach_name' => $user->coach_id ? $user->coach->full_name:'بدون مدرب', // اسم المدرب الشخصي
-                'end_date' => $endDate, // تاريخ نهاية الاشتراك / الفترة التجريبية
-                'remaining_days' => $remainingDays, // الأيام المتبقية
-                'account_status' => $user->status ?? 'نشط', // حالة الحساب (نشط، منتهي، مغلق)
+                'email' => $user->email, 
+                'subscriPtion' => ($activeSub && $activeSub->plan) ? $activeSub->plan->name : 'بدون باقة',
+                'coach_name' => $user->coach_id ? $user->coach->full_name:'بدون مدرب', 
+                'end_date' => $endDate, 
+                'remaining_days' => $remainingDays, 
+                'account_status' => $user->status ?? 'نشط', 
             ];
         });
 
@@ -252,33 +253,38 @@ class UserAuthController extends Controller
         ]);
     }
 
-    // تعديل بيانات المستخدم الأساسية من قبل الإدارة
     public function updateTrainee(Request $request, $id)
     {  
-        // 1. التحقق من الصلاحيات (أدمن أو استقبال فقط)
         if (!in_array(auth()->user()->role, ['admin', 'reception'])) {
             return response()->json(['message' => 'غير مصرح لك بالوصول'], 403);
         }
 
-        // 2. العثور على المستخدم
         $user = User::find($id);
         if (!$user) {
             return response()->json(['message' => 'المستخدم غير موجود'], 404);
         }
+        $syrianPhoneRegex = '/^(09|\+?9639|009639)\d{8}$/';
 
         $validator = Validator::make($request->all(), [
             'full_name'         => 'sometimes|string|max:255',
-            'email'             => 'sometimes|email|unique:users,email,' . $id,
-            'phone'             => 'sometimes|string|unique:users,phone,' . $id,
+            'email'             => 'sometimes|email:dns,rfc|unique:users,email,' . $id,
+            'phone'             => ['sometimes', 'string', 'regex:' . $syrianPhoneRegex, 'unique:users,phone,' . $id],
             'membership_number' => 'sometimes|string|unique:users,membership_number,' . $id,
             'status'            => 'sometimes|in:pending,active,rejected,expired,banned',
             'coach_id'          => 'nullable|exists:users,id',
+        ],[
+            // رسائل خطأ مخصصة بالعربية
+            'email.email'       => 'يرجى إدخال بريد إلكتروني صالح وموجود.',
+            'phone.regex'       => 'رقم الهاتف يجب أن يكون رقم سوري صحيح (مثال: 0912345678 أو +963912345678).',
+            'email.unique'      => 'البريد الإلكتروني مستخدم بالفعل.',
+            'phone.unique'      => 'رقم الهاتف مستخدم بالفعل.',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            $allErrors = collect($validator->errors()->all())->implode(' - ');
+            return response()->json(['message' => $allErrors], 422);
         }
-
+        
         if ($request->filled('coach_id')) {
             $coach = User::find($request->coach_id);
             if (!$coach || !$coach->role('coach')) {
