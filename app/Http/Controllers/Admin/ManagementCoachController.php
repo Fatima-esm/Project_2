@@ -526,16 +526,13 @@ class ManagementCoachController extends Controller
                 $current = [
                     'date'         => $row->recorded_at->format('Y-m-d'),
                     'check_in'     => $row->recorded_at->format('H:i'),
-                    'check_in_at'  => $row->recorded_at->format('Y-m-d H:i'),
                     'check_out'    => null,
-                    'check_out_at' => null,
                     'note'         => $row->note,
                     'recorded_by'  => $row->recorder?->full_name,
                 ];
             } elseif ($row->type === 'check_out') {
                 if ($current !== null && $current['check_out'] === null) {
                     $current['check_out']    = $row->recorded_at->format('H:i');
-                    $current['check_out_at'] = $row->recorded_at->format('Y-m-d H:i');
                     $current['status']       = 'مكتمل';
                     $current['status_label'] = 'تم تسجيل دخول وخروج الكوتش';
 
@@ -549,9 +546,7 @@ class ManagementCoachController extends Controller
                     $sessions[] = [
                         'date'         => $row->recorded_at->format('Y-m-d'),
                         'check_in'     => null,
-                        'check_in_at'  => null,
                         'check_out'    => $row->recorded_at->format('H:i'),
-                        'check_out_at' => $row->recorded_at->format('Y-m-d H:i'),
                         'note'         => $row->note,
                         'recorded_by'  => $row->recorder?->full_name,
                         'status'       => 'خروج_فقط',
