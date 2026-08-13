@@ -57,6 +57,9 @@ use Illuminate\Support\Facades\Route;
         Route::get('gym-halls/all', [GymHallController::class, 'index']);
         Route::get('gym-halls/{id}/details', [GymHallController::class, 'show']);
 
+        // الحضور للكوتش
+        Route::post('/attendance/coach', [ManagementCoachController::class, 'coachCheckIn']);
+        Route::get('/attendance/employee/{userId}', [ManagementCoachController::class, 'employeeAttendanceRecords']);
     
     });
 
@@ -66,7 +69,6 @@ use Illuminate\Support\Facades\Route;
         Route::prefix('schedules')->group( function () {
         // إدارة جداول العمل: عرض الخطط
             Route::get('/all', [CoachScheduleController::class, 'index']);
-            //اضافة موعد عمل جديد
             Route::post('/add', [CoachScheduleController::class, 'store']);
             Route::post('/update/{id}', [CoachScheduleController::class, 'update']);
             Route::delete('/{schedule_id}', [CoachScheduleController::class, 'destroy']);
@@ -79,13 +81,13 @@ use Illuminate\Support\Facades\Route;
             Route::get('/staff/schedules-report', [CoachScheduleController::class, 'getAllStaffWithSchedules']);
         });
 
+        // ادارة  الصالات
         Route::prefix('gym-halls')->group(function () {
-            // عرض جميع الصالات
             Route::post('/add', [GymHallController::class, 'store']);
             Route::post('/{id}/update', [GymHallController::class, 'update']);
             Route::delete('/{id}/delete', [GymHallController::class, 'destroy']);
         });
-
+        // ادارة  الموظفين
         Route::middleware(['auth:sanctum'])->prefix('admin/receptionists')->group(function () {
             Route::get('/statistics', [AdminReceptionistController::class, 'staticsData']);
             Route::get('/', [AdminReceptionistController::class, 'index']);          // عرض كل موظفي الاستقبال (مع بحث و Paginate)
@@ -100,21 +102,16 @@ use Illuminate\Support\Facades\Route;
         });
          
 
-        //عرض طلبات الكوتش المعلقة
+        // معالجة طلبات الكوتش للتوظيف بالنادي
         Route::get('coaches/pending', [ManagementCoachController::class, 'getPendingCoaches']);
-        //قبول أو رفض طلبات الكوتش
-        Route::post('coaches/{id}/update-status', [ManagementCoachController::class, 'updateCoachStatus']);
-        // عرض المدربين المرفوضين
-        Route::get('coaches/rejected', [ManagementCoachController::class, 'getRejectedCoaches']);
-        // إعادة تفعيل حساب المدرب المرفوض
+        Route::post('coaches/{id}/update-status', [ManagementCoachController::class, 'updateCoachStatus']); //قبول أو رفض طلبات الكوتش
+        Route::get('coaches/rejected', [ManagementCoachController::class, 'getRejectedCoaches']);        // عرض المدربين المرفوضين
         Route::post('coaches/{id}/reactivate', [ManagementCoachController::class, 'reactivateCoach']);
 
 
         Route::get('coachs/all', [ManagementCoachController::class, 'index']);
-        // عرض تفاصيل كوتش محدد
         Route::get('coaches/{id}', [ManagementCoachController::class, 'show']);
-        // عرض المتدربين التابعين لكوتش معين (بإرسال الـ coach_id في الـ URL)
-        Route::get('/coach/{id}/trainees', [ManagementCoachController::class, 'getTraineesByCoach']);
+        Route::get('/coach/{id}/trainees', [ManagementCoachController::class, 'getTraineesByCoach']);  // عرض المتدربين التابعين لكوتش معين
     
 
         // 1. إضافة أو تعديل راتب الموظف/الكوتش (مع احتساب المكافآت والخصومات)
