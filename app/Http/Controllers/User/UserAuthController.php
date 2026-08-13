@@ -263,7 +263,7 @@ class UserAuthController extends Controller
         if (!$user) {
             return response()->json(['message' => 'المستخدم غير موجود'], 404);
         }
-        $syrianPhoneRegex = '/^(09|\+?9639|009639)\d{8}$/';
+        $syrianPhoneRegex = '/^963[0-9]{9}$/';
 
         $validator = Validator::make($request->all(), [
             'full_name'         => 'sometimes|string|max:255',
@@ -275,7 +275,7 @@ class UserAuthController extends Controller
         ],[
             // رسائل خطأ مخصصة بالعربية
             'email.email'       => 'يرجى إدخال بريد إلكتروني صالح وموجود.',
-            'phone.regex'       => 'رقم الهاتف يجب أن يكون رقم سوري صحيح (مثال: 0912345678 أو +963912345678).',
+            'phone.regex'       => 'رقم الهاتف يجب أن يكون رقم سوري صحيح (مثال: +963912345678).',
             'email.unique'      => 'البريد الإلكتروني مستخدم بالفعل.',
             'phone.unique'      => 'رقم الهاتف مستخدم بالفعل.',
         ]);
@@ -284,7 +284,7 @@ class UserAuthController extends Controller
             $allErrors = collect($validator->errors()->all())->implode(' - ');
             return response()->json(['message' => $allErrors], 422);
         }
-        
+
         if ($request->filled('coach_id')) {
             $coach = User::find($request->coach_id);
             if (!$coach || !$coach->role('coach')) {
