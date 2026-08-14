@@ -62,6 +62,13 @@ use Illuminate\Support\Facades\Route;
         Route::post('/attendance/coach', [ManagementCoachController::class, 'coachCheckIn']);
         Route::get('/attendance/employee/{userId}', [ManagementCoachController::class, 'employeeAttendanceRecords']);
     
+        //club page
+        Route::get('/club/details', [ClubActivityController::class, 'getClubDetails']);
+        Route::get('/services', [ClubActivityController::class, 'servicesIndex']);
+        Route::get('/events', [EventController::class, 'eventsIndex']);
+        Route::get('/events/{id}/details', [EventController::class, 'showEvent']);
+
+
     });
 
     //admin only
@@ -108,7 +115,7 @@ use Illuminate\Support\Facades\Route;
         Route::post('coaches/{id}/update-status', [ManagementCoachController::class, 'updateCoachStatus']); //قبول أو رفض طلبات الكوتش
         Route::get('coaches/rejected', [ManagementCoachController::class, 'getRejectedCoaches']);        // عرض المدربين المرفوضين
         Route::post('coaches/{id}/reactivate', [ManagementCoachController::class, 'reactivateCoach']);
-
+        Route::post('/coaches/{id}/send-email', [ManagementCoachController::class, 'sendEmailToCoach']);
 
         Route::get('coachs/all', [ManagementCoachController::class, 'index']);
         Route::get('coaches/{id}', [ManagementCoachController::class, 'show']);
@@ -127,16 +134,13 @@ use Illuminate\Support\Facades\Route;
         Route::post('products/update/{id}', [ProductController::class, 'updateProduct']);
         Route::delete('products/delete/{id}', [ProductController::class, 'deleteProduct']);
 
-        Route::get('/admin/club/details', [ClubActivityController::class, 'getClubDetails']);
+        //club page
         Route::post('/admin/club/details', [ClubActivityController::class, 'updateClubDetails']);
         // خدمات
-        Route::get('/services', [ClubActivityController::class, 'servicesIndex']);
         Route::post('/services', [ClubActivityController::class, 'servicesStore']);
         Route::post('/services/{id}/update', [ClubActivityController::class, 'servicesUpdate']); // أو PUT
         Route::delete('/services/{id}/delete', [ClubActivityController::class, 'servicesDestroy']);
-
         // فعاليات
-        Route::get('/events', [EventController::class, 'eventsIndex']);
         Route::post('/events', [EventController::class, 'eventsStore']);
         Route::post('/events/{id}/update', [EventController::class, 'eventsUpdate']);
         Route::delete('/events/{id}/delete', [EventController::class, 'eventsDestroy']);

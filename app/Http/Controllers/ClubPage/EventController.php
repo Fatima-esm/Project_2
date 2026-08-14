@@ -28,7 +28,6 @@ class EventController extends Controller
 
     public function eventsIndex()
     {
-        $this->ensureAdmin();
         return response()->json([
             'status' => 200,
             'data'   => ClubEvent::orderByDesc('event_date')->get(),
@@ -87,7 +86,7 @@ class EventController extends Controller
             'data'    => $event,
         ], 201);
     }
-    
+
     public function eventsUpdate(Request $request, $id)
     {
         $this->ensureAdmin();

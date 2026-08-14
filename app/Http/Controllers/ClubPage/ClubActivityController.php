@@ -54,12 +54,12 @@ class ClubActivityController extends Controller
                 'closing_time' => $details->closing_time
                     ? date('h:i A', strtotime($details->closing_time))
                     : null,
-                // الحالة المحسوبة — نفس المفتاح الذي يستخدمه الفرونت
                 'status'       => $details->resolveCurrentStatus(),
             ]
         ], 200);
 
     }
+
     // services for all users
     public function listServices()
     {
@@ -82,9 +82,6 @@ class ClubActivityController extends Controller
         ]);
     }
 
-    /**
-     * تعديل وإدارة تفاصيل النادي من قبل الإدارة (شاملة الوصف والصورة).
-     */
     public function updateClubDetails(Request $request)
     {
         $request->validate([
@@ -132,6 +129,7 @@ class ClubActivityController extends Controller
             ]
         ], 200);
     }    
+    
     // for all users
     public function servicesIndex()
     {
