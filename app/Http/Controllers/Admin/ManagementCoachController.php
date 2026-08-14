@@ -13,55 +13,6 @@ use Illuminate\Http\Request;
 class ManagementCoachController extends Controller
 {
 
-    public function sendEmailToCoach(Request $request, $id)
-    {
-        if (auth()->user()->role !== 'admin') {
-            return response()->json(['message' => 'غير مصرح'], 403);
-        }
-
-        $request->validate([
-            'subject' => 'required|string|max:255',
-            'message' => 'required|string|max:5000',
-        ]);
-
-        $coach = User::where('role', 'coach')->find($id);
-
-        if (!$coach) {
-            return response()->json(['message' => 'الكوتش غير موجود'], 404);
-        }
-
-        if (!$coach->email) {
-            return response()->json(['message' => 'لا يوجد بريد إلكتروني لهذا الكوتش'], 400);
-        }
-
-        try {
-            Mail::to($coach->email)
-                ->bcc('solaimanesmaeel334@gmail.com') // إيميلك
-                ->send(new CoachApplicationMail(
-                    $request->subject,
-                    $request->message,
-                    $coach->full_name
-                ));
-
-            return response()->json([
-                'status'  => 200,
-                'message' => 'تم إرسال الإيميل بنجاح',
-                'data'    => [
-                    'coach_id'    => $coach->id,
-                    'coach_name'  => $coach->full_name,
-                    'coach_email' => $coach->email,
-                    'subject'     => $request->subject,
-                    'message'     => $request->message,
-                ],
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status'  => 500,
-                'message' => 'فشل إرسال الإيميل',
-                'error'   => $e->getMessage(),
-            ], 500);
-        }
-    }
 
     // عرض الكوتش الذين قاموا بالتسجيل وينتظرون موافقة الإدارة
     public function getPendingCoaches(Request $request)

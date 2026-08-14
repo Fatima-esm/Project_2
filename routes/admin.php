@@ -14,6 +14,7 @@ use App\Http\Controllers\Payment\SubscriptionController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\ClubPage\GymHallController;
 use App\Http\Controllers\Admin\ManagementCoachController;
+use App\Http\Controllers\Admin\EmailController;
 use App\Http\Controllers\Admin\SalaryController;
 use Illuminate\Http\Request;
 use Spatie\Permission\Traits\HasRoles;  //for role and permission
@@ -115,7 +116,10 @@ use Illuminate\Support\Facades\Route;
         Route::post('coaches/{id}/update-status', [ManagementCoachController::class, 'updateCoachStatus']); //قبول أو رفض طلبات الكوتش
         Route::get('coaches/rejected', [ManagementCoachController::class, 'getRejectedCoaches']);        // عرض المدربين المرفوضين
         Route::post('coaches/{id}/reactivate', [ManagementCoachController::class, 'reactivateCoach']);
-        Route::post('/coaches/{id}/send-email', [ManagementCoachController::class, 'sendEmailToCoach']);
+
+        Route::get('coaches/sent-emails', [EmailController::class, 'sentEmails']);
+        Route::get('coaches/sent-emails/{id}', [EmailController::class, 'showSentEmail']);
+        Route::post('/coaches/{id}/send-email', [EmailController::class, 'sendEmailToCoach']);
 
         Route::get('coachs/all', [ManagementCoachController::class, 'index']);
         Route::get('coaches/{id}', [ManagementCoachController::class, 'show']);
