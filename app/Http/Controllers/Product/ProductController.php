@@ -205,7 +205,7 @@ class ProductController extends Controller
     public function showProduct($id)
     {
     // التحقق من الصلاحيات (يمكنك تعديل الأدوار المسموح لها حسب الرغبة)
-    if (!in_array(auth()->user()->role, ['admin', 'reception', 'trainee'])) {
+    if (!in_array(auth()->user()->role, ['admin', 'reception', 'trainee', 'coach'])) {
         return response()->json(['message' => 'غير مصرح لك بالوصول'], 403);
     }
 

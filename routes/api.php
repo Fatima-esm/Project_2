@@ -9,6 +9,8 @@ use App\Http\Controllers\Payment\PaymentController;
 use App\Http\Controllers\Payment\TransactionController;
 use App\Http\Controllers\Payment\SubscriptionController;
 use App\Http\Controllers\ClubPage\ClubActivityController;
+use App\Http\Controllers\ClubPage\EventController;
+
 use App\Http\Controllers\Product\ProductController;
 
 use App\Http\Controllers\ClubPage\GymHallController;
@@ -54,10 +56,17 @@ use App\Http\Controllers\MeasurementController;
     Route::post('/upload-cv', [UserAuthController::class, 'uploadCv']); // coach only
 
     Route::middleware(['auth:sanctum', 'role:trainee|coach'])->group(function () {
-    // باقي خدمات النادي
+        //صفحة النادي
+        Route::get('/club/details', [ClubActivityController::class, 'getClubDetails']);
+        //servises
+        Route::get('/club/services', [ClubActivityController::class, 'listServices']);
+        //events
+        Route::get('club/events', [EventController::class, 'listEvents']);
+        Route::get('club/events/{id}/details', [EventController::class, 'showEvent']);
+        //products    
+        Route::get('/club/products', [ProductController::class, 'indexProducts']);
+        Route::get('/club/products/show/{id}', [ProductController::class, 'showProduct']);
 
-    Route::get('/club/details', [ClubActivityController::class, 'getClubDetails']);
-    //Route::post('/admin/club/details', [ClubDetailController::class, 'updateClubDetails']);
 
         Route::middleware('check.subscription')->group(function () {
             Route::get('exercises', [ExercisesController::class, 'index']);
@@ -126,9 +135,6 @@ use App\Http\Controllers\MeasurementController;
     Route::get('/exercises/{id}', [ExercisesController::class, 'getExerciseDetails']);
 
     //...............................................................................................
-    //products
-    Route::get('/Home/products', [ProductController::class, 'indexProducts']);
-    Route::get('/Home/products/show/{id}', [ProductController::class, 'showProduct']);
 
     //...........................................
 

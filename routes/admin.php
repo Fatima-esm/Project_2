@@ -7,7 +7,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Coach\CoachScheduleController;
 use App\Http\Controllers\Coach\CoachSelectionController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
-
+use App\Http\Controllers\ClubPage\ClubActivityController;
+use App\Http\Controllers\ClubPage\EventController;
 use App\Http\Controllers\User\UserAuthController;
 use App\Http\Controllers\Payment\SubscriptionController;
 use App\Http\Controllers\Product\ProductController;
@@ -113,14 +114,11 @@ use Illuminate\Support\Facades\Route;
         Route::get('coaches/{id}', [ManagementCoachController::class, 'show']);
         Route::get('/coach/{id}/trainees', [ManagementCoachController::class, 'getTraineesByCoach']);  // عرض المتدربين التابعين لكوتش معين
     
-
-        // 1. إضافة أو تعديل راتب الموظف/الكوتش (مع احتساب المكافآت والخصومات)
+        // تعيين راتب جماعي للكوتش أو الاستقبال بناءً على خطة العمل والدور والشهر
         Route::post('/coach/salaries', [SalaryController::class, 'storeOrUpdateSalary']);
         Route::get('/coach/{id}/salaries', [SalaryController::class, 'getEmployeeSalaries']);
-        // تعيين راتب جماعي للكوتش أو الاستقبال بناءً على خطة العمل والدور والشهر
         Route::post('/salaries/assign', [SalaryController::class, 'assignSalaryByWorkSchedule']);
         Route::post('/salaries/{salaryId}/pay', [SalaryController::class, 'paySalary']);
-        // مسار عرض رواتب الموظفين مع الفلترة
         Route::get('/salaries/employees', [SalaryController::class, 'getAllEmployeesSalaries']);
 
 
@@ -128,6 +126,25 @@ use Illuminate\Support\Facades\Route;
         Route::post('products/add', [ProductController::class, 'storeProduct']);
         Route::post('products/update/{id}', [ProductController::class, 'updateProduct']);
         Route::delete('products/delete/{id}', [ProductController::class, 'deleteProduct']);
+
+        Route::get('/admin/club/details', [ClubActivityController::class, 'getClubDetails']);
+        Route::post('/admin/club/details', [ClubActivityController::class, 'updateClubDetails']);
+        // خدمات
+        Route::get('/services', [ClubActivityController::class, 'servicesIndex']);
+        Route::post('/services', [ClubActivityController::class, 'servicesStore']);
+        Route::post('/services/{id}/update', [ClubActivityController::class, 'servicesUpdate']); // أو PUT
+        Route::delete('/services/{id}/delete', [ClubActivityController::class, 'servicesDestroy']);
+
+        // فعاليات
+        Route::get('/events', [EventController::class, 'eventsIndex']);
+        Route::post('/events', [EventController::class, 'eventsStore']);
+        Route::post('/events/{id}/update', [EventController::class, 'eventsUpdate']);
+        Route::delete('/events/{id}/delete', [EventController::class, 'eventsDestroy']);
+
+
+
+
+
 
     });
 

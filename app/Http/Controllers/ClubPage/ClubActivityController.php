@@ -5,9 +5,27 @@ namespace App\Http\Controllers\ClubPage;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\ClubDetail;
+use App\Models\ClubService;
+use App\Models\ClubEvent;
+use Illuminate\Support\Facades\Storage;
 
 class ClubActivityController extends Controller
 {
+    private function ensureAdmin()
+    {
+        if (auth()->user()->role !== 'admin') {
+            abort(response()->json(['message' => 'غير مصرح'], 403));
+        }
+    }
+
+    private function ensurerecep()
+    {
+        if (!in_array($reception->role, ['admin', 'reception'])) {
+            return response()->json(['message' => 'غير مصرح'], 403);
+        }
+    }
+    
+    // club profile for all users
     public function getClubDetails()
     {
         $details = ClubDetail::first();
@@ -25,8 +43,8 @@ class ClubActivityController extends Controller
             'data'    => [
                 'name'         => $details->name,
                 'description'  => $details->description,
-                'image'        => $details->image,        // مسار نسبي
-                'image_url'    => $details->image_url,    // رابط كامل للفرونت
+                'image'        => $details->image,
+                'image_url'    => $details->image_url,
                 'phone'        => $details->phone,
                 'email'        => $details->email,
                 'location'     => $details->location,
@@ -36,10 +54,34 @@ class ClubActivityController extends Controller
                 'closing_time' => $details->closing_time
                     ? date('h:i A', strtotime($details->closing_time))
                     : null,
-                'status'       => $details->status,
+                // الحالة المحسوبة — نفس المفتاح الذي يستخدمه الفرونت
+                'status'       => $details->resolveCurrentStatus(),
             ]
         ], 200);
+
     }
+    // services for all users
+    public function listServices()
+    {
+        $services = ClubService::where('is_active', true)
+            ->where('status', 'available')
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn($s) => [
+                'id'           => $s->id,
+                'name'         => $s->name,
+                'icon'         => $s->icon,
+                'status'       => $s->status,
+                'status_label' => $s->status === 'available' ? 'متوفرة' : 'غير متوفرة',
+            ]);
+
+        return response()->json([
+            'status' => 200,
+            'count'  => $services->count(),
+            'data'   => $services,
+        ]);
+    }
+
     /**
      * تعديل وإدارة تفاصيل النادي من قبل الإدارة (شاملة الوصف والصورة).
      */
@@ -90,6 +132,71 @@ class ClubActivityController extends Controller
             ]
         ], 200);
     }    
+    // for all users
+    public function servicesIndex()
+    {
+        return response()->json([
+            'status' => 200,
+            'data'   => ClubService::orderBy('sort_order')->get(),
+        ]);
+    }
+
+    public function servicesStore(Request $request)
+    {
+        $this->ensureAdmin();
+
+        $data = $request->validate([
+            'name'       => 'required|string|max:100',
+            'icon'       => 'nullable|string|max:50',
+            'status'     => 'nullable|in:available,unavailable',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_active'  => 'nullable|boolean',
+        ]);
+
+        $service = ClubService::create($data);
+
+        return response()->json([
+            'status'  => 201,
+            'message' => 'تم إضافة الخدمة بنجاح',
+            'data'    => $service,
+        ], 201);
+    }
+
+    public function servicesUpdate(Request $request, $id)
+    {
+        $this->ensureAdmin();
+        $service = ClubService::findOrFail($id);
+
+        $data = $request->validate([
+            'name'       => 'sometimes|string|max:100',
+            'icon'       => 'nullable|string|max:50',
+            'status'     => 'sometimes|in:available,unavailable',
+            'sort_order' => 'nullable|integer|min:0',
+            'is_active'  => 'nullable|boolean',
+        ]);
+
+        $service->update($data);
+
+        return response()->json([
+            'status'  => 200,
+            'message' => 'تم تحديث الخدمة بنجاح',
+            'data'    => $service,
+        ]);
+    }
+
+    public function servicesDestroy($id)
+    {
+        $this->ensureAdmin();
+        ClubService::findOrFail($id)->delete();
+
+        return response()->json([
+            'status'  => 200,
+            'message' => 'تم حذف الخدمة بنجاح',
+        ]);
+    }
+
+
+
     
     
 }

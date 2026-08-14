@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('subscription_id')->constrained()->cascadeOnDelete();
             $table->string('transaction_number');
             $table->decimal('amount',8,2);
-            $table->string('payment_method')->default('Bank Transfer');
+            $table->enum('payment_method', ['cash', 'card', 'online', 'bank'])->default('cash');
             $table->timestamps();
         });
     }
