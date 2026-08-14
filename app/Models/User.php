@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -18,7 +17,6 @@ class User extends Authenticatable
 {
     use HasRoles;
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
-    use LogsActivity;
 
     protected $guard_name = 'web';
     /**
@@ -150,12 +148,12 @@ class User extends Authenticatable
     }
 
     // تحديد الخصائص التي تريد مراقبتها وتسيجلها
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logAll(['full_name','email', 'status']) // أو يمكنك تحديد حقول معينة لتخفيف الحجم ->logOnly(['full_name', 'status'])
-            ->logOnlyDirty(); // تسجيل التغييرات الفعلية فقط
-    }
+    // public function getActivitylogOptions(): LogOptions
+    // {
+    //     return LogOptions::defaults()
+    //         ->logAll(['full_name','email', 'status']) // أو يمكنك تحديد حقول معينة لتخفيف الحجم ->logOnly(['full_name', 'status'])
+    //         ->logOnlyDirty(); // تسجيل التغييرات الفعلية فقط
+    // }
 
     public function coachedSessions()
     {
