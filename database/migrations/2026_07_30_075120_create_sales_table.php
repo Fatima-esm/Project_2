@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('customer_name')->nullable(); // اسم الزائر إن لم يكن عضو
             $table->string('customer_phone')->nullable();
             $table->decimal('total_amount', 10, 2);
-            $table->enum('payment_method', ['cash', 'card', 'online', 'bank'])->default('cash');
+            $table->string('payment_method')->default('cash')->change();
             $table->enum('status', ['completed', 'cancelled', 'refunded'])->default('completed');
             $table->text('notes')->nullable();
             $table->timestamps();
