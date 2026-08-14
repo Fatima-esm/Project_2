@@ -120,6 +120,7 @@ use Illuminate\Support\Facades\Route;
         Route::get('coaches/sent-emails', [EmailController::class, 'sentEmails']);
         Route::get('coaches/sent-emails/{id}', [EmailController::class, 'showSentEmail']);
         Route::post('/coaches/{id}/send-email', [EmailController::class, 'sendEmailToCoach']);
+        Route::post('/admin/send-email/user', [EmailController::class, 'sendEmailToUser']);
 
         Route::get('coachs/all', [ManagementCoachController::class, 'index']);
         Route::get('coaches/{id}', [ManagementCoachController::class, 'show']);

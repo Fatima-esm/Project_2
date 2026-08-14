@@ -19,52 +19,59 @@ class AdminSeeder extends Seeder
     {
         // add admin account
         $admin = User::create([
-            'full_name' => 'Admin',
-            'email' => 'admin@gmail.com',
-            'phone' => '936876540321',
+            'full_name' => 'Admin Mohammad',
+            'email' => 'admin_mohammad@gmail.com',
+            'phone' => '936876540777',
             'password' => bcrypt('12345678'),
             'role' => 'admin',
             'active_at' => 1,
             'status' => 'active',
             'email_verified_at' => now(),
-            'membership_number' => 'ADM-001',
+            'membership_number' => 'ADM-00001',
+            'profile_image'     => 'profiles/admin.jpg',
+
         ]);
         $admin->assignRole('admin');
         
         // add receptionist account
         $reception = [
             [
-                'full_name' => 'Reception 1',
-                'email' => 'reception1@gmail.com',
-                'phone' => '963876543222',
+                'full_name' => 'Reception Rami',
+                'email' => 'reception_rami@gmail.com',
+                'phone' => '963876543220',
                 'password' => bcrypt('12345678'),
                 'role' => 'reception',
                 'status' => 'active',
                 'active_at' => 1,
                 'email_verified_at' => now(),
-                'membership_number' => 'REC-20001',
+                'membership_number' => 'REC-22001',
+                'profile_image'     => 'profiles/rami.jpg',
+
             ],
             [
-                'full_name' => 'Reception 2',
-                'email' => 'reception2@gmail.com',
-                'phone' => '963876504323',
+                'full_name' => 'Reception Hani',
+                'email' => 'reception_hani@gmail.com',
+                'phone' => '963876504329',
                 'password' => bcrypt('12345678'),
                 'role' => 'reception',
                 'status' => 'active',
                 'active_at' => 1,
                 'email_verified_at' => now(),
-                'membership_number' => 'REC-20002',
+                'membership_number' => 'REC-22002',
+                'profile_image'     => 'profiles/hani.jpg',
             ],
             [
-                'full_name' => 'Reception 3',
-                'email' => 'reception3@gmail.com',
-                'phone' => '963876500323',
+                'full_name' => 'Reception Anas',
+                'email' => 'reception_anas@gmail.com',
+                'phone' => '963876500353',
                 'password' => bcrypt('12345678'),
                 'role' => 'reception',
                 'status' => 'active',
                 'active_at' => 1,
                 'email_verified_at' => now(),
-                'membership_number' => 'REC-20003',
+                'membership_number' => 'REC-22003',
+                'profile_image'     => 'profiles/anas.jpg',
+
             ],
         ];
 

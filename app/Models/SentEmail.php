@@ -8,8 +8,8 @@ class SentEmail extends Model
 {
     protected $fillable = [
         'sent_by',
-        'coach_id',
-        'coach_name',
+        'user_id',
+        'user_name',
         'to_email',
         'subject',
         'body',
@@ -21,8 +21,8 @@ class SentEmail extends Model
         return $this->belongsTo(User::class, 'sent_by');
     }
 
-    public function coach()
+    public function user()
     {
-        return $this->belongsTo(User::class, 'coach_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

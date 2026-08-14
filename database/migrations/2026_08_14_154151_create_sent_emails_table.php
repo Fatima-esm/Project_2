@@ -14,12 +14,12 @@ return new class extends Migration
         Schema::create('sent_emails', function (Blueprint $table) {
             $table->id();
             $table->foreignId('sent_by')->nullable()->constrained('users')->nullOnDelete(); // الأدمن
-            $table->foreignId('coach_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('coach_name')->nullable();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('user_name')->nullable();
             $table->string('to_email');
             $table->string('subject');
             $table->text('body');
-            $table->string('type')->default('coach_message'); // coach_message / otp / ...
+            $table->string('type')->default('admin_message'); // coach_message / otp / ...
             $table->timestamps();
         });
     }

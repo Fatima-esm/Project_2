@@ -16,7 +16,7 @@ class CoachSeeder extends Seeder
             [
                 'user' => [
                     'full_name'         => 'سمير احمد',
-                    'email'             => 'sameer@gmail.com',
+                    'email'             => 'coach_sameer@gmail.com',
                     'phone'             => '963876054321',
                     'password'          => Hash::make('12345678'),
                     'role'              => 'coach',
@@ -38,7 +38,7 @@ class CoachSeeder extends Seeder
             [
                 'user' => [
                     'full_name'         => 'علي الرفاعي',
-                    'email'             => 'ali@gmail.com',
+                    'email'             => 'coach_ali@gmail.com',
                     'phone'             => '963987654322',
                     'password'          => Hash::make('12345678'),
                     'role'              => 'coach',
@@ -60,7 +60,7 @@ class CoachSeeder extends Seeder
             [
                 'user' => [
                     'full_name'         => 'فراس الاشقر',
-                    'email'             => 'feras@gmail.com',
+                    'email'             => 'coach_feras@gmail.com',
                     'phone'             => '963897654323',
                     'password'          => Hash::make('12345678'),
                     'role'              => 'coach',
@@ -82,7 +82,7 @@ class CoachSeeder extends Seeder
             [
                 'user' => [
                     'full_name'         => 'احمد الاحمد',
-                    'email'             => 'ahmad@gmail.com',
+                    'email'             => 'coach_ahmad@gmail.com',
                     'phone'             => '09876504324',
                     'password'          => Hash::make('12345678'),
                     'role'              => 'coach',
@@ -104,7 +104,7 @@ class CoachSeeder extends Seeder
             [
                 'user' => [
                     'full_name'         => 'سعد الاسعد',
-                    'email'             => 'saad@gmail.com',
+                    'email'             => 'coach_saad@gmail.com',
                     'phone'             => '963987654325',
                     'password'          => Hash::make('12345678'),
                     'role'              => 'coach',
@@ -126,7 +126,7 @@ class CoachSeeder extends Seeder
             [
                 'user' => [
                     'full_name'         => 'محمد اسماعيل',
-                    'email'             => 'mohammad@gmail.com',
+                    'email'             => 'coach_mohammad@gmail.com',
                     'phone'             => '963876504326',
                     'password'          => Hash::make('12345678'),
                     'role'              => 'coach',

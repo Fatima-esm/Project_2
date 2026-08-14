@@ -32,7 +32,7 @@
                 </h2>
 
                 <p style="font-size: 15px; line-height: 1.8; color: #555555;">
-                    لديك رسالة من إدارة <strong style="color: #b8860b;">SMART GYM</strong> بخصوص طلبك:
+                    لديك رسالة من إدارة <strong style="color: #b8860b;">SMART GYM</strong>:
                 </p>
 
                 <!-- صندوق الرسالة -->
