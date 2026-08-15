@@ -44,7 +44,7 @@ class TraineeSeeder extends Seeder
 
             $trainee->assignRole('trainee');
 
-            $freePlan = Plan::where('name', 'Free Trial')->first();
+            $freePlan = Plan::where('price', 0)->first();
             Subscription::create([
                 'user_id'    => $trainee->id,
                 'plan_id'    => $freePlan->id, 
