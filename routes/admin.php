@@ -62,7 +62,10 @@ use Illuminate\Support\Facades\Route;
         // الحضور للكوتش
         Route::post('/attendance/coach', [ManagementCoachController::class, 'coachCheckIn']);
         Route::get('/attendance/employee/{userId}', [ManagementCoachController::class, 'employeeAttendanceRecords']);
-    
+        Route::get('/coaches/attendance', [ManagementCoachController::class, 'allCoachesAttendance']);
+        Route::get('coachs/all', [ManagementCoachController::class, 'index']);
+        Route::get('coaches/{id}', [ManagementCoachController::class, 'show']);
+
         //club page
         Route::get('/club/details', [ClubActivityController::class, 'getClubDetails']);
         Route::get('/services', [ClubActivityController::class, 'servicesIndex']);
@@ -122,8 +125,6 @@ use Illuminate\Support\Facades\Route;
         Route::post('/coaches/{id}/send-email', [EmailController::class, 'sendEmailToCoach']);
         Route::post('/admin/send-email/user', [EmailController::class, 'sendEmailToUser']);
 
-        Route::get('coachs/all', [ManagementCoachController::class, 'index']);
-        Route::get('coaches/{id}', [ManagementCoachController::class, 'show']);
         Route::get('/coach/{id}/trainees', [ManagementCoachController::class, 'getTraineesByCoach']);  // عرض المتدربين التابعين لكوتش معين
     
         // تعيين راتب جماعي للكوتش أو الاستقبال بناءً على خطة العمل والدور والشهر
