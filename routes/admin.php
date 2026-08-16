@@ -3,7 +3,7 @@
 
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\ProfileController;
-
+use App\Http\Controllers\Admin\AdminSessionController;
 use App\Http\Controllers\Coach\CoachScheduleController;
 use App\Http\Controllers\Coach\CoachSelectionController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -111,6 +111,15 @@ use Illuminate\Support\Facades\Route;
             Route::get('/{id}/activity-logs', [AdminReceptionistController::class, 'activity']); // عرض سجل نشاطات موظف الاستقبال
             Route::get('/{id}/subscriptions', [AdminReceptionistController::class, 'receptionistSubscriptions']);
             Route::get('/{id}/summary', [AdminReceptionistController::class, 'receptionistSummary']);
+        });
+
+        Route::middleware(['auth:sanctum'])->prefix('admin/sessions')->group(function () {
+            Route::get('/', [AdminSessionController::class, 'indexSessions']);           // عرض وفلترة الكل
+            Route::post('/', [AdminSessionController::class, 'storeSession']);          // إضافة جلسة جديدة
+            Route::get('/statistics', [AdminSessionController::class, 'statistics']); // الإحصائيات العامة
+            Route::get('/{id}', [AdminSessionController::class, 'showSession']);        // تفاصيل جلسة محددة
+            Route::post('/{id}/update', [AdminSessionController::class, 'updateSession']);      // تعديل جلسة
+            Route::post('/{id}/cancel', [AdminSessionController::class, 'cancelSession']); // إلغاء جلسة
         });
          
 
