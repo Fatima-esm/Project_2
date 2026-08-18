@@ -21,7 +21,7 @@ use App\Http\Controllers\Admin\EmailController;
 use App\Http\Controllers\Admin\SalaryController;
 use Illuminate\Http\Request;
 use Spatie\Permission\Traits\HasRoles;  
-
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\AdminReceptionistController;
 
 use Illuminate\Support\Facades\Route;
@@ -181,7 +181,15 @@ use Illuminate\Support\Facades\Route;
 
 
 
-
+        //reports
+        Route::prefix('reports')
+            ->middleware(['auth:sanctum'])
+            ->group(function () {
+                Route::get('/sales', [ReportController::class, 'sales']);
+                Route::get('/subscriptions', [ReportController::class, 'subscriptions']);
+                Route::get('/salaries', [ReportController::class, 'salaries']);
+                Route::get('/staff-activity', [ReportController::class, 'staffActivity']);
+            });
 
 
     });

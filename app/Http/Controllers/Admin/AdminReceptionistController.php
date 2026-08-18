@@ -412,7 +412,7 @@ class AdminReceptionistController extends Controller
     }
 
     public function receptionistSubscriptions(Request $request, $id): \Illuminate\Http\JsonResponse
-    {
+     {
         $admin = auth()->user();
         if (!$admin || $admin->role !== 'admin') {
             return response()->json(['message' => 'غير مصرح لك، هذه الصلاحية للأدمن فقط'], 403);
@@ -467,7 +467,7 @@ class AdminReceptionistController extends Controller
     }
 
     public function receptionistSummary(Request $request, $id): \Illuminate\Http\JsonResponse
-    {
+     {
         $admin = auth()->user();
         if (!$admin || $admin->role !== 'admin') {
             return response()->json(['message' => 'غير مصرح لك، هذه الصلاحية للأدمن فقط'], 403);
@@ -531,7 +531,7 @@ class AdminReceptionistController extends Controller
         ], 200);
     }
 
-
+    //delete
     public function activityLog($id)
     {
         $admin = auth()->user();
