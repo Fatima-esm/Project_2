@@ -234,6 +234,7 @@ class UserAuthController extends Controller
                 'end_date' => $endDate, 
                 'remaining_days' => $remainingDays, 
                 'account_status' => $user->status ?? 'نشط', 
+                ''
             ];
         });
 

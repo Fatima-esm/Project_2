@@ -2,6 +2,8 @@
 
 
 use App\Http\Controllers\Admin\AdminAuthController;
+use App\Http\Controllers\Exercise\AdminExercisesController;
+
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AdminSessionController;
 use App\Http\Controllers\Coach\CoachScheduleController;
@@ -64,7 +66,7 @@ use Illuminate\Support\Facades\Route;
         Route::get('/attendance/employee/{userId}', [ManagementCoachController::class, 'employeeAttendanceRecords']);
         Route::get('/coaches/attendance', [ManagementCoachController::class, 'allCoachesAttendance']);
         Route::get('coachs/all', [ManagementCoachController::class, 'index']);
-        Route::get('coaches/{id}', [ManagementCoachController::class, 'show']);
+        Route::get('coaches/{id}', [ManagementCoachController::class, 'show'])->whereNumber('id');
 
         //club page
         Route::get('/club/details', [ClubActivityController::class, 'getClubDetails']);
@@ -81,6 +83,17 @@ use Illuminate\Support\Facades\Route;
         Route::get('reception/dashboard', [AdminReceptionistController::class, 'dashboard']);
         Route::get('admin/dashboard', [AdminAuthController::class, 'dashboard']);
 
+        //exercise
+        Route::get('/exercises', [AdminExercisesController::class, 'getAdminExercises']);
+        Route::post('/exercises', [AdminExercisesController::class, 'storeExercise']);
+        Route::post('/exercises/{id}', [AdminExercisesController::class, 'updateExercise']); // تم استخدام POST لدعم رفع الصور (Form-Data)
+        Route::delete('/exercises/{id}', [AdminExercisesController::class, 'deleteExercise']);
+        Route::get('/exercises/{id}', [AdminExercisesController::class, 'showExercise']);
+        Route::get('/categories', [AdminExercisesController::class, 'getCategories']);
+        Route::get('/categories/{id}', [AdminExercisesController::class, 'showCategory']);
+        Route::post('/categories', [AdminExercisesController::class, 'storeCategory']);
+        Route::post('/categories/{id}', [AdminExercisesController::class, 'updateCategory']);
+        Route::delete('/categories/{id}', [AdminExercisesController::class, 'deleteCategory']);
     });
 
     //admin only

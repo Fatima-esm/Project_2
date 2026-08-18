@@ -888,20 +888,17 @@ $coaches = User::where('role', 'coach')
             ->orderBy('recorded_at')
             ->get(['user_id', 'type', 'recorded_at', 'note']);
 
-        // تجميع السجلات حسب الكوتش ثم حسب التاريخ
         $recordsByUser = $records->groupBy('user_id');
 
         $data = $coaches->map(function ($coach, $index) use ($recordsByUser, $startDate, $endDate) {
             $coachRecords = $recordsByUser->get($coach->id, collect());
             
-            // تجميع السجلات الخاصة بهذا الكوتش حسب الأيام داخل الشهر
             $groupedByDate = $coachRecords->groupBy(fn($item) => \Carbon\Carbon::parse($item->recorded_at)->toDateString());
 
             $totalPresentDays = 0;
             $totalCompletedDays = 0;
             $daysSummary = [];
 
-            // المرور على كل يوم من أيام الشهر لحساب الملخص
             $currentDate = $startDate->copy();
             while ($currentDate <= $endDate) {
                 $dateStr = $currentDate->toDateString();

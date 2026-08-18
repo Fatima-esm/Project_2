@@ -40,7 +40,7 @@ class TraineeController extends Controller
                 'id'                 => $trainee->id,
                 'full_name'          => $trainee->full_name,
                 'membership_number'  => $trainee->membership_number,
-                
+                'profile_image_url' => $trainee->profile_image_url,
                 'current_subscription' => $latestSubscription ? [
                     'plan_name'  => $latestSubscription->plan->name_ar ?? $latestSubscription->plan->name ?? null,
                     'status'     => $latestSubscription->status, // paid, expired, pending

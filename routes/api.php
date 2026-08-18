@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminAuthController;
-use App\Http\Controllers\ExercisesController;
+use App\Http\Controllers\Exercise\ExercisesController;
 use App\Http\Controllers\ProfileController;
 
 use App\Http\Controllers\Payment\PlanController;
