@@ -11,7 +11,24 @@ class Category extends Model
 
     protected $guarded = [];
 
+    protected $appends = ['image_url'];
+
     public function exercises() {
     return $this->hasMany(Exercise::class);
     }   
+
+    public function getImageUrlAttribute()
+    {
+        if (!$this->image) {
+            return null;
+        }
+
+        if (str_starts_with($this->image, 'http')) {
+            return $this->image;
+        }
+
+        return asset('storage/' . $this->image);
+    }
+    
+
 }

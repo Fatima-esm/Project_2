@@ -11,14 +11,13 @@ class Product extends Model
     
     protected $guarded=[];
 
-    // حالة المنتج تلقائياً
     public function getStatusAttribute()
     {
         if ($this->stock_quantity <= 0) {
             return 'out_of_stock';      // غير متوفر
         }
 
-        if ($this->stock_quantity <= 5) {   // يمكنك تغيير الرقم
+        if ($this->stock_quantity <= 5) {  
             return 'low_stock';         // كمية محدودة
         }
 

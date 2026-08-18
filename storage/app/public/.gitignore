@@ -5,6 +5,10 @@
 !cvs/*
 !images/
 !images/*
+!events/
+!events/*
+!categories
+!categories/*
 !products/
 !products/*
 !profiles/

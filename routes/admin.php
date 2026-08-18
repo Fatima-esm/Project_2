@@ -77,9 +77,9 @@ use Illuminate\Support\Facades\Route;
         Route::get('admin/sessions/', [AdminSessionController::class, 'indexSessions']);           
         Route::get('admin/sessions/{id}', [AdminSessionController::class, 'showSession']); 
 
-        //dashboard reception
+        //dashboard 
         Route::get('reception/dashboard', [AdminReceptionistController::class, 'dashboard']);
-
+        Route::get('admin/dashboard', [AdminAuthController::class, 'dashboard']);
 
     });
 

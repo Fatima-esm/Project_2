@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\GymHall;
 use App\Models\Session;
 use App\Models\CoachSchedule;
-
+use Illuminate\Support\Facades\DB;
 use App\Models\SessionBooking;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -362,16 +362,15 @@ class CoachSessionController extends Controller
         ]);
     }
 
+
     public function markAttendance(Request $request, $sessionId)
     {
         $coach = auth()->user();
 
-        // 1. التحقق أن المستخدم كوتش
         if ($coach->role !== 'coach') {
             return response()->json(['message' => 'غير مصرح لك بهذا الإجراء'], 403);
         }
 
-        // 2. البحث عن الجلسة والتأكد أنها تخص هذا الكوتش
         $session = Session::where('id', $sessionId)
             ->where('coach_id', $coach->id)
             ->first();
@@ -384,37 +383,38 @@ class CoachSessionController extends Controller
             return response()->json(['message' => 'لا يمكن إتمام جلسة تم إلغاؤها مسبقاً'], 400);
         }
 
-        // 3. التحقق من صحة بيانات الحضور المرسلة
+        // 1. التعديل هنا: استخدام user_id بدلاً من booking_id
         $request->validate([
-            'attendances'                 => 'nullable|array',
-            'attendances.*.booking_id'    => 'required|exists:session_bookings,id',
-            'attendances.*.status'        => 'required|in:attended,no_show',
+            'attendances'           => 'nullable|array',
+            'attendances.*.user_id' => 'required|exists:users,id',
+            'attendances.*.status'  => 'required|in:attended,no_show',
         ]);
 
-        // 4. تنفيذ تسجيل الحضور للمتدربين
-        if ($request->has('attendances')) {
-            foreach ($request->attendances as $item) {
-                $booking = SessionBooking::where('id', $item['booking_id'])
-                    ->where('session_id', $session->id)
-                    ->first();
+        DB::transaction(function () use ($request, $session) {
 
-                if ($booking) {
-                    $booking->update([
-                        'status'      => $item['status'],
-                        'attended_at' => $item['status'] === 'attended' ? now() : null,
-                    ]);
+            // 2. تحديث حالة المتدربين الممررين في الاستدعاء
+            if ($request->has('attendances')) {
+                foreach ($request->attendances as $item) {
+                    SessionBooking::where('session_id', $session->id)
+                        ->where('user_id', $item['user_id'])
+                        ->update([
+                            'status'      => $item['status'],
+                            'attended_at' => $item['status'] === 'attended' ? now() : null,
+                        ]);
                 }
             }
-        }
 
-        SessionBooking::where('session_id', $session->id)
-            ->where('status', 'booked')
-            ->update(['status' => 'no_show']);
+            // 3. تحويل باقي المتدربين الذين لم يُذكروا إلى no_show تلقائياً
+            SessionBooking::where('session_id', $session->id)
+                ->where('status', 'booked')
+                ->update(['status' => 'no_show']);
 
-        $session->update([
-            'status'             => 'completed',
-            'coach_confirmed_at' => now(), 
-        ]);
+            // 4. إغلاق الجلسة وتأكيدها
+            $session->update([
+                'status'             => 'completed',
+                'coach_confirmed_at' => now(), 
+            ]);
+        });
 
         return response()->json([
             'status'  => 200,
@@ -423,11 +423,11 @@ class CoachSessionController extends Controller
                 'session_id'         => $session->id,
                 'status'             => $session->status,
                 'status_label'       => $session->status_label,
-                'coach_confirmed_at' => $session->coach_confirmed_at->format('Y-m-d H:i:s'),
+                'coach_confirmed_at' => $session->coach_confirmed_at?->format('Y-m-d H:i:s'),
             ]
         ]);
     }
-
+    
     public function cancel($id)
     {
         $coach = auth()->user();

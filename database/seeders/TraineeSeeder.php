@@ -33,12 +33,14 @@ class TraineeSeeder extends Seeder
                 'gender'            => 'رجل' ,
                 'active_at'         => 1,
                 'email'             => "trainee_{$i}@gmail.com",
-                'phone'             => '963123450' . str_pad($i, 3, '0', STR_PAD_LEFT),
+                'phone'             => '963123422' . str_pad($i, 3, '0', STR_PAD_LEFT),
                 'password'          => Hash::make('12345678'),
                 'membership_number' => 'SG-' . rand(10000, 99999),
                 'role'              => 'trainee',
                 'coach_id'          => $randomCoach->id, // ربط المتدرب بالكوتش مباشرة عبر عمود coach_id
                 'status'            => 'active',
+                'profile_image'     => 'profiles/user.jpg',
+
                 'email_verified_at' => now(),
             ]);
 

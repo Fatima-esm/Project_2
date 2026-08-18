@@ -12,16 +12,16 @@ class CategoryAndExerciseSeeder extends Seeder
     {
         // 1. الفئات العشر المقترحة مع صور افتراضية اختيارية
         $categoriesData = [
-            ['name' => 'تمارين الصدر (Chest)', 'image' => 'categories/chest.jpg'],
-            ['name' => 'تمارين الظهر (Back)', 'image' => 'categories/back.jpg'],
-            ['name' => 'تمارين الأرجل (Legs)', 'image' => 'categories/legs.jpg'],
-            ['name' => 'تمارين الأكتاف (Shoulders)', 'image' => 'categories/shoulders.jpg'],
-            ['name' => 'تمارين الذراعين (Arms)', 'image' => 'categories/arms.jpg'],
-            ['name' => 'تمارين البطن (Abs)', 'image' => 'categories/abs.jpg'],
-            ['name' => 'تمارين كارديو (Cardio)', 'image' => 'categories/cardio.jpg'],
-            ['name' => 'تمارين التحمل (Endurance)', 'image' => 'categories/endurance.jpg'],
-            ['name' => 'تمارين الإطالة (Stretching)', 'image' => 'categories/stretching.jpg'],
-            ['name' => 'تمارين القوة (Strength)', 'image' => 'categories/strength.jpg'],
+            ['name' => 'تمارين الصدر (Chest)', 'image' => 'categories/chest.png'],
+            ['name' => 'تمارين الظهر (Back)', 'image' => 'categories/back.png'],
+            ['name' => 'تمارين الأرجل (Legs)', 'image' => 'categories/legs.png'],
+            ['name' => 'تمارين الأكتاف (Shoulders)', 'image' => 'categories/shoulders.png'],
+            ['name' => 'تمارين الذراعين (Arms)', 'image' => 'categories/arms.png'],
+            ['name' => 'تمارين البطن (Abs)', 'image' => 'categories/abs.png'],
+            ['name' => 'تمارين كارديو (Cardio)', 'image' => 'categories/cardio.png'],
+            ['name' => 'تمارين التحمل (Endurance)', 'image' => 'categories/endurance.png'],
+            ['name' => 'تمارين الإطالة (Stretching)', 'image' => 'categories/stretching.png'],
+            ['name' => 'تمارين القوة (Strength)', 'image' => 'categories/strength.png'],
         ];
 
         // 2. تمارين مقترحة لكل فئة (4 تمارين لكل فئة)

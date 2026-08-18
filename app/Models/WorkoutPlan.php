@@ -20,19 +20,16 @@ class WorkoutPlan extends Model
         'notes',
     ];
 
-    // علاقة مع التمرين المختار
     public function exercise()
     {
         return $this->belongsTo(Exercise::class);
     }
 
-    // علاقة مع المتدرب
     public function trainee()
     {
         return $this->belongsTo(User::class, 'trainee_id');
     }
 
-    // علاقة مع الكوتش
     public function coach()
     {
         return $this->belongsTo(User::class, 'coach_id');

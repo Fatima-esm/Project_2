@@ -25,7 +25,6 @@ use Illuminate\Support\Facades\Auth;
 class UserAuthController extends Controller
 {
 
-    //to register for User المستخدم والادارة
     public function register(Request $request): \Illuminate\Http\JsonResponse
     {
         $isAdminOrReception = auth()->check() && in_array(auth()->user()->role, ['admin', 'reception']);
@@ -67,20 +66,18 @@ class UserAuthController extends Controller
 
         ]);
 
-        // معالجة الخطة المجانية للمتدرب فقط
         if ($user->role === 'trainee') {
             $freePlan = Plan::where('name', 'Free Trial')->first();
             Subscription::create([
                 'user_id'    => $user->id,
                 'plan_id'    => $freePlan->id, 
                 'price'      => 0,
-                'status'     => 'paid', // المستخدم نعتبره مدفوع
+                'status'     => 'paid', // 
                 'starts_at'  => now(),
                 'expires_at' => now()->addDays($freePlan->duration_days),
             ]);
         }
 
-        // تعيين الدور لـ Spatie
         $user->assignRole($request->role);
 
        $addedByName = auth()->check() ? auth()->user()->full_name : 'المستخدم نفسه';
@@ -197,12 +194,10 @@ class UserAuthController extends Controller
             ->whereNotIn('role', ['admin', 'reception', 'coach']);
 
 
-        // تطبيق الفلترة باستخدام status (الحسابات النشطة، المنتهية، إلخ)
         if ($request->has('status') && !empty($request->status)) {
             $query->where('status', $request->query('status'));
         }
 
-        //  البحث (بالاسم أو رقم الجوال أو رقم العضوية)
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
@@ -273,7 +268,6 @@ class UserAuthController extends Controller
             'status'            => 'sometimes|in:pending,active,rejected,expired,banned',
             'coach_id'          => 'nullable|exists:users,id',
         ],[
-            // رسائل خطأ مخصصة بالعربية
             'email.email'       => 'يرجى إدخال بريد إلكتروني صالح وموجود.',
             'phone.regex'       => 'رقم الهاتف يجب أن يكون رقم سوري صحيح (مثال: +963912345678).',
             'email.unique'      => 'البريد الإلكتروني مستخدم بالفعل.',
@@ -312,7 +306,6 @@ class UserAuthController extends Controller
 
         $user->load(['coach', 'goal']);
 
-        // ===== تسجيل النشاط (موحد) =====
         $addedByName = auth()->user()->full_name;
 
         ActivityLog::log(

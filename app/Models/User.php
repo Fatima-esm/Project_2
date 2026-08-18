@@ -46,7 +46,7 @@ class User extends Authenticatable
 
     ];
 
-    protected $appends = ['profile_image_url']; // ✅ وليس profile_image
+    protected $appends = ['profile_image_url']; 
 
     public function getProfileImageUrlAttribute()
     {
@@ -100,7 +100,6 @@ class User extends Authenticatable
 
     public function goal()
     {
-        // المستخدم يتبع هدفاً واحداً
         return $this->belongsTo(Goal::class);
     }
 
@@ -109,7 +108,6 @@ class User extends Authenticatable
         return $this->belongsToMany(WorkSchedule::class, 'coach_schedule', 'user_id', 'work_schedule_id');
     }
 
-    //  المدرب الخاص بالمستخدم
     public function coach() {
         return $this->belongsTo(User::class, 'coach_id');
     }
@@ -122,7 +120,6 @@ class User extends Authenticatable
 
         $traineesCount = self::where('coach_id', $this->id)->count();
 
-        // إرجاع true إذا كان أقل من الحد الأقصى (20)
         return $traineesCount < 20;
     }
 
@@ -130,7 +127,6 @@ class User extends Authenticatable
         return $this->hasMany(User::class, 'coach_id');
     }
 
-    // علاقة مع خطط التمرين
     public function workoutPlans()
     {
         return $this->hasMany(WorkoutPlan::class, 'trainee_id');        
@@ -141,7 +137,6 @@ class User extends Authenticatable
         return $this->hasMany(CoachSchedule::class, 'user_id');
     }
 
-    // علاقة المستخدم بسجل الرواتب (المستخدم يملك عدة رواتب)
     public function salaries()
     {
         return $this->hasMany(Salary::class, 'user_id');
