@@ -3,6 +3,7 @@
 
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Exercise\AdminExercisesController;
+use App\Http\Controllers\Rating\CoachRatingController;
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\AdminSessionController;
@@ -67,7 +68,7 @@ use Illuminate\Support\Facades\Route;
         Route::get('/coaches/attendance', [ManagementCoachController::class, 'allCoachesAttendance']);
         Route::get('coachs/all', [ManagementCoachController::class, 'index']);
         Route::get('coaches/{id}', [ManagementCoachController::class, 'show'])->whereNumber('id');
-
+        Route::get('/coaches/rating/{coachId}/summary', [CoachRatingController::class, 'getCoachSummaryForAdmin']);
         //club page
         Route::get('/club/details', [ClubActivityController::class, 'getClubDetails']);
         Route::get('/services', [ClubActivityController::class, 'servicesIndex']);

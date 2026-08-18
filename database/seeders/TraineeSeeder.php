@@ -13,18 +13,14 @@ class TraineeSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. جلب جميع الكوتشز المتاحين لاختيار أحدهم عشوائياً لكل متدرب
         $coaches = User::where('role', 'coach')
                         ->where('status', 'active')
                         ->get();
                         
         if ($coaches->isEmpty()) {
-            return; // إن لم يكن هناك كوتشز، يتم إيقاف السيدر لتجنب الأخطاء
-        }
+            return;  }
 
-        // 2. إنشاء 40 متدرباً
         for ($i = 1; $i <= 40; $i++) {
-            // اختيار كوتش عشوائي لهذا المتدرب
             $randomCoach = $coaches->random();
 
             $trainee = User::create([
@@ -37,7 +33,7 @@ class TraineeSeeder extends Seeder
                 'password'          => Hash::make('12345678'),
                 'membership_number' => 'SG-' . rand(10000, 99999),
                 'role'              => 'trainee',
-                'coach_id'          => $randomCoach->id, // ربط المتدرب بالكوتش مباشرة عبر عمود coach_id
+                'coach_id'          => $randomCoach->id, 
                 'status'            => 'active',
                 'profile_image'     => 'profiles/user.jpg',
 

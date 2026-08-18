@@ -199,6 +199,8 @@ class ManagementCoachController extends Controller
     {
         $coaches = User::where('role', 'coach')
             ->with(['workSchedules', 'coachProfile']) 
+            ->withCount('receivedRatings')
+            ->withAvg('receivedRatings', 'rating')
             ->get()
             ->map(function ($coach) {
                 $traineesCount = User::where('coach_id', $coach->id)->count();
@@ -219,7 +221,10 @@ class ManagementCoachController extends Controller
                     'phone' => $coach->phone,
                     'email' => $coach->email,
                     'status' => $coach->status,
-                    'trainees_count' => $traineesCount,  
+                    'trainees_count' => $traineesCount,
+                    'average_rating'  => round((float) ($coach->received_ratings_avg_rating ?? 0), 1),
+                    'ratings_count'   => (int) ($coach->received_ratings_count ?? 0),  
+                    'rating_percent'  => round(((float) ($coach->received_ratings_avg_rating ?? 0) / 5) * 100),
                     'profile_image_url' => $coach->profile_image
                         ? asset('storage/' . $coach->profile_image)
                         : null,
@@ -244,6 +249,8 @@ class ManagementCoachController extends Controller
     {
         $coach = User::where('role', 'coach')
             ->with(['workSchedules', 'coachProfile', 'salaries'])
+            ->withCount('receivedRatings')
+            ->withAvg('receivedRatings', 'rating')
             ->findOrFail($id);
 
         $traineesCount = User::where('coach_id', $coach->id)->count();
@@ -256,8 +263,7 @@ class ManagementCoachController extends Controller
                 'end_time' => $schedule->end_time,
             ];
         });
-
-        // جلب أحدث راتب مسجل للكوتش من جدول salaries
+        $avg = round((float) ($coach->received_ratings_avg_rating ?? 0), 1);
         $latestSalary = $coach->salaries->sortByDesc('created_at')->first();
 
         return response()->json([
@@ -270,8 +276,13 @@ class ManagementCoachController extends Controller
                 'phone' => $coach->phone,
                 'email' => $coach->email,
                 'status' => $coach->status,
-                'salary' => $latestSalary ? $latestSalary->net_salary : 0, // صافي الراتب أو base_salary حسب الحاجة
+                'salary' => $latestSalary ? $latestSalary->net_salary : 0, 
                 'trainees_count' => $traineesCount,
+
+                'average_rating' => $avg,                    
+                'ratings_count'  => (int) $coach->received_ratings_count,
+                'rating_percent' => round(($avg / 5) * 100), 
+
                 'profile_image_url' => $coach->profile_image
                     ? asset('storage/' . $coach->profile_image)
                     : null,
@@ -284,7 +295,6 @@ class ManagementCoachController extends Controller
         ], 200);
     }
 
-    // عرض جميع المتدربين مقسمين أو تابعين لكل كوتش من وجهة نظر الأدمن
     public function getTraineesByCoach(Request $request, $coachId)
     {
         $admin = auth()->user();
@@ -864,93 +874,90 @@ class ManagementCoachController extends Controller
             return response()->json(['message' => 'غير مصرح'], 403);
         }
 
-        // تحديد الشهر والسنة (افتراضياً الشهر الحالي)
         $month = $request->month ?? now()->month;
         $year  = $request->year ?? now()->year;
 
         $startDate = \Carbon\Carbon::create($year, $month, 1)->startOfMonth();
         $endDate   = \Carbon\Carbon::create($year, $month, 1)->endOfMonth();
 
-        // جلب الكوتشات المفعلين فقط
-$coaches = User::where('role', 'coach')
-    ->where('status', 'active')
-    ->when($request->filled('search'), function ($q) use ($request) {
-        $s = $request->search;
-        $q->where(fn($q) => $q->where('full_name', 'like', "%{$s}%")
-            ->orWhere('membership_number', 'like', "%{$s}%"));
-    })
-    ->when($request->filled('coach_id'), fn($q) => $q->where('id', $request->coach_id))
-    ->with('workSchedules:id,days,work_name,start_time,end_time') // <-- تم حذف user_id من هنا
-    ->get(['id', 'full_name', 'membership_number', 'profile_image', 'status']);
-        // جلب سجلات الحضور الخاصة بالكوتشات خلال الشهر المحدد بالكامل
-        $records = \App\Models\StaffAttendance::whereIn('user_id', $coaches->pluck('id'))
-            ->whereBetween('recorded_at', [$startDate, $endDate])
-            ->orderBy('recorded_at')
-            ->get(['user_id', 'type', 'recorded_at', 'note']);
+        $coaches = User::where('role', 'coach')
+            ->where('status', 'active')
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $s = $request->search;
+                $q->where(fn($q) => $q->where('full_name', 'like', "%{$s}%")
+                    ->orWhere('membership_number', 'like', "%{$s}%"));
+            })
+            ->when($request->filled('coach_id'), fn($q) => $q->where('id', $request->coach_id))
+            ->with('workSchedules:id,days,work_name,start_time,end_time') 
+            ->get(['id', 'full_name', 'membership_number', 'profile_image', 'status']);
+                $records = \App\Models\StaffAttendance::whereIn('user_id', $coaches->pluck('id'))
+                    ->whereBetween('recorded_at', [$startDate, $endDate])
+                    ->orderBy('recorded_at')
+                    ->get(['user_id', 'type', 'recorded_at', 'note']);
 
-        $recordsByUser = $records->groupBy('user_id');
+                $recordsByUser = $records->groupBy('user_id');
 
-        $data = $coaches->map(function ($coach, $index) use ($recordsByUser, $startDate, $endDate) {
-            $coachRecords = $recordsByUser->get($coach->id, collect());
-            
-            $groupedByDate = $coachRecords->groupBy(fn($item) => \Carbon\Carbon::parse($item->recorded_at)->toDateString());
+                $data = $coaches->map(function ($coach, $index) use ($recordsByUser, $startDate, $endDate) {
+                    $coachRecords = $recordsByUser->get($coach->id, collect());
+                    
+                    $groupedByDate = $coachRecords->groupBy(fn($item) => \Carbon\Carbon::parse($item->recorded_at)->toDateString());
 
-            $totalPresentDays = 0;
-            $totalCompletedDays = 0;
-            $daysSummary = [];
+                    $totalPresentDays = 0;
+                    $totalCompletedDays = 0;
+                    $daysSummary = [];
 
-            $currentDate = $startDate->copy();
-            while ($currentDate <= $endDate) {
-                $dateStr = $currentDate->toDateString();
-                $dayName = $this->arabicDayName($dateStr);
-                $isWorkDay = $this->isWorkDay($coach->workSchedules, $dayName);
+                    $currentDate = $startDate->copy();
+                    while ($currentDate <= $endDate) {
+                        $dateStr = $currentDate->toDateString();
+                        $dayName = $this->arabicDayName($dateStr);
+                        $isWorkDay = $this->isWorkDay($coach->workSchedules, $dayName);
 
-                $dayRows = $groupedByDate->get($dateStr, collect());
-                $checkIn  = $dayRows->firstWhere('type', 'check_in');
-                $checkOut = $dayRows->where('type', 'check_out')->last();
+                        $dayRows = $groupedByDate->get($dateStr, collect());
+                        $checkIn  = $dayRows->firstWhere('type', 'check_in');
+                        $checkOut = $dayRows->where('type', 'check_out')->last();
 
-                $inTime  = $checkIn?->recorded_at;
-                $outTime = $checkOut?->recorded_at;
+                        $inTime  = $checkIn?->recorded_at;
+                        $outTime = $checkOut?->recorded_at;
 
-                [$status, $statusKey] = $this->resolveStatus($isWorkDay, $inTime, $outTime, $dateStr);
+                        [$status, $statusKey] = $this->resolveStatus($isWorkDay, $inTime, $outTime, $dateStr);
 
-                if ($statusKey === 'present') {
-                    $totalPresentDays++;
-                } elseif ($statusKey === 'completed') {
-                    $totalCompletedDays++;
-                }
+                        if ($statusKey === 'present') {
+                            $totalPresentDays++;
+                        } elseif ($statusKey === 'completed') {
+                            $totalCompletedDays++;
+                        }
 
-                $currentDate->addDay();
+                        $currentDate->addDay();
+                    }
+
+                    return [
+                        '#'                   => $index + 1,
+                        'id'                  => $coach->id,
+                        'full_name'           => $coach->full_name,
+                        'title'               => 'كوتش',
+                        'membership_number'   => $coach->membership_number,
+                        'image_url'           => $coach->profile_image_url
+                            ?? ($coach->profile_image ? asset('storage/' . $coach->profile_image) : null),
+                        'total_present_days'  => $totalPresentDays,
+                        'total_completed_days'=> $totalCompletedDays,
+                        'attendance_records'  => $coachRecords->map(fn($record) => [
+                            'type'        => $record->type,
+                            'recorded_at' => $record->recorded_at->toDateTimeString(),
+                            'note'        => $record->note,
+                        ]),
+                    ];
+                })->values();
+
+                return response()->json([
+                    'status'  => 200,
+                    'year'    => $year,
+                    'month'   => $month,
+                    'summary' => [
+                        'total_coaches' => $data->count(),
+                    ],
+                    'data'    => $data,
+                ]);
             }
-
-            return [
-                '#'                   => $index + 1,
-                'id'                  => $coach->id,
-                'full_name'           => $coach->full_name,
-                'title'               => 'كوتش',
-                'membership_number'   => $coach->membership_number,
-                'image_url'           => $coach->profile_image_url
-                    ?? ($coach->profile_image ? asset('storage/' . $coach->profile_image) : null),
-                'total_present_days'  => $totalPresentDays,
-                'total_completed_days'=> $totalCompletedDays,
-                'attendance_records'  => $coachRecords->map(fn($record) => [
-                    'type'        => $record->type,
-                    'recorded_at' => $record->recorded_at->toDateTimeString(),
-                    'note'        => $record->note,
-                ]),
-            ];
-        })->values();
-
-        return response()->json([
-            'status'  => 200,
-            'year'    => $year,
-            'month'   => $month,
-            'summary' => [
-                'total_coaches' => $data->count(),
-            ],
-            'data'    => $data,
-        ]);
-    }
 
     private function finalizeOpenSession(array $session): array
     {
@@ -1039,4 +1046,6 @@ $coaches = User::where('role', 'coach')
     }
 
 
-}
+        
+    
+    }

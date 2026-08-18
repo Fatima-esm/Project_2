@@ -19,11 +19,6 @@ class User extends Authenticatable
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $guard_name = 'web';
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $guarded=[];
 
     protected $fillable = [
@@ -142,13 +137,6 @@ class User extends Authenticatable
         return $this->hasMany(Salary::class, 'user_id');
     }
 
-    // تحديد الخصائص التي تريد مراقبتها وتسيجلها
-    // public function getActivitylogOptions(): LogOptions
-    // {
-    //     return LogOptions::defaults()
-    //         ->logAll(['full_name','email', 'status']) // أو يمكنك تحديد حقول معينة لتخفيف الحجم ->logOnly(['full_name', 'status'])
-    //         ->logOnlyDirty(); // تسجيل التغييرات الفعلية فقط
-    // }
 
     public function coachedSessions()
     {
@@ -159,4 +147,34 @@ class User extends Authenticatable
     {
         return $this->hasMany(SessionBooking::class);
     }
+
+    // تقييمات كتبها المتدرب
+    public function givenRatings()
+    {
+        return $this->hasMany(CoachRating::class, 'trainee_id');
+    }
+
+    public function receivedRatings()
+    {
+        return $this->hasMany(CoachRating::class, 'coach_id');
+    }
+
+    public function averageRating(): float
+    {
+        return round((float) $this->receivedRatings()->avg('rating'), 1);
+    }
+
+    // متوسط التقييم
+    public function getAverageRatingAttribute(): float
+    {
+        $avg = $this->receivedRatings()->avg('rating');
+        return $avg ? round((float) $avg, 1) : 0.0;
+    }
+
+    // عدد التقييمات
+    public function getRatingsCountAttribute(): int
+    {
+        return (int) $this->receivedRatings()->count();
+    }
+
 }

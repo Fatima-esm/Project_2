@@ -423,6 +423,7 @@ class CoachSessionController extends Controller
                 'session_id'         => $session->id,
                 'status'             => $session->status,
                 'status_label'       => $session->status_label,
+                'is_attendance_done'  => true,
                 'coach_confirmed_at' => $session->coach_confirmed_at?->format('Y-m-d H:i:s'),
             ]
         ]);
@@ -496,6 +497,7 @@ class CoachSessionController extends Controller
             'available'    => $session->has_available_slots,
             'status'       => $session->status,
             'status_label' => $session->status_label,
+            'is_attendance_done' => $session->is_attendance_done,
             'hall' => $session->hall ? [
                 'id'   => $session->hall->id,
                 'name' => $session->hall->name,

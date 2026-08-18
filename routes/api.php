@@ -3,7 +3,7 @@
 use App\Http\Controllers\Admin\AdminAuthController;
 use App\Http\Controllers\Exercise\ExercisesController;
 use App\Http\Controllers\ProfileController;
-
+use App\Http\Controllers\Rating\CoachRatingController;
 use App\Http\Controllers\Payment\PlanController;
 use App\Http\Controllers\Payment\PaymentController;
 use App\Http\Controllers\Payment\TransactionController;
@@ -66,20 +66,25 @@ use App\Http\Controllers\MeasurementController;
         //products    
         Route::get('/club/products', [ProductController::class, 'indexProducts']);
         Route::get('/club/products/show/{id}', [ProductController::class, 'showProduct']);
-
+        //rating in page coach before selected him
+        Route::get('/coaches/{id}/ratings', [CoachRatingController::class, 'coachRatings']);
+        Route::get('/coach/ratings', [CoachRatingController::class, 'coachSummary']);
+       
 
         Route::middleware('check.subscription')->group(function () {
             Route::get('exercises', [ExercisesController::class, 'index']);
 
             //عرض الكوتش
             Route::get('/user/coaches', [CoachSelectionController::class, 'index']);
-            // عرض تفاصيل كوتش محدد
             Route::get('/user/coaches/{id}', [CoachSelectionController::class, 'show']);
-            // اختيار الكوتش (يشترط وجود اشتراك نشط)
             Route::post('/user/select-coach', [CoachSelectionController::class, 'selectCoach']);
-            // اختيار الكوتش (يشترط وجود اشتراك نشط)
             Route::post('/user/change-coach', [CoachSelectionController::class, 'requestChangeCoach']);
-
+            //rating for trainee
+            Route::middleware(['role:trainee'])->group(function () {
+            Route::post('/ratings/coach', [CoachRatingController::class, 'store']);
+            Route::get('/ratings/my', [CoachRatingController::class, 'myRating']);
+            Route::delete('/ratings/coach', [CoachRatingController::class, 'destroy']);
+            });
 
            // 4. التقدم والقياسات
             Route::get("/user/measurements", [ProfileController::class, 'getMeasurements']);

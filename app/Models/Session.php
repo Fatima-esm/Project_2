@@ -20,7 +20,12 @@ class Session extends Model
         'session_date' => 'date',
     ];
 
-    protected $appends = ['status_label', 'booked_count', 'has_available_slots'];
+    protected $appends = ['status_label', 'booked_count', 'has_available_slots', 'is_attendance_done',];
+
+    public function getIsAttendanceDoneAttribute(): bool
+    {
+        return !is_null($this->coach_confirmed_at);
+    }
 
     public function coach()
     {
