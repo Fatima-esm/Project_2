@@ -15,35 +15,33 @@ class AdminSessionController extends Controller
 
     public function statistics()
     {
-        $totalSessions     = Session::count();
-        $todaySessions     = Session::whereDate('session_date', now()->toDateString())->count();
-        $completedSessions = Session::where('status', 'completed')->count();
-        $cancelledSessions = Session::where('status', 'cancelled')->count();
+        $today = now()->toDateString();
+
+        Session::updateExpiredSessions(); 
+
+        $sessions = Session::whereDate('session_date', $today)->get();
 
         return response()->json([
             'status' => 200,
+            'date'   => $today,
             'data'   => [
-                'total_sessions'     => $totalSessions,
-                'today_sessions'     => $todaySessions,
-                'completed_sessions' => $completedSessions,
-                'cancelled_sessions' => $cancelledSessions,
-            ]
+                'today_sessions'     => $sessions->count(),
+                'scheduled_sessions' => $sessions->where('status', 'scheduled')->count(),
+                'ongoing_sessions'   => $sessions->where('status', 'ongoing')->count(),
+                'completed_sessions' => $sessions->where('status', 'completed')->count(),
+                'cancelled_sessions' => $sessions->where('status', 'cancelled')->count(),
+            ],
         ]);
     }
 
-    // 1. عرض جلسات النادي مع إمكانية الفلترة (للأدمن)
     public function indexSessions(Request $request)
     {
-        if (auth()->user()->role !== 'admin') {
-            return response()->json(['message' => 'غير مصرح لك بالوصول، هذه الصلاحية للأدمن فقط'], 403);
-        }
 
         Session::updateExpiredSessions();
 
         $query = Session::with(['coach:id,full_name,email', 'hall:id,name,type,capacity', 'bookings.user:id,full_name'])
                         ->latest();
 
-        // فلاتر البحث
         if ($request->filled('date')) {
             $query->whereDate('session_date', $request->date);
         }
@@ -113,7 +111,6 @@ class AdminSessionController extends Controller
                 return response()->json(['message' => 'نوع الصالة لا يطابق نوع الجلسة'], 422);
             }
 
-            // التحقق من التعارضات
             if (Session::hasHallConflict($hall->id, $request->session_date, $request->start_time, $request->end_time)) {
                 return response()->json(['message' => 'الصالة محجوزة مسبقاً في هذا الوقت'], 400);
             }
@@ -208,7 +205,6 @@ class AdminSessionController extends Controller
                 'status'
             ]));
 
-            // تحديث السعة إن تغيرت الصالة
             if ($request->filled('hall_id')) {
                 $session->update(['capacity' => $hall->capacity]);
             }
@@ -254,9 +250,6 @@ class AdminSessionController extends Controller
     // 5. عرض تفاصيل جلسة معينّة
     public function showSession($id)
     {
-        if (!in_array(auth()->user()->role, ['admin', 'reception', 'trainee', 'coach'])) {
-            return response()->json(['message' => 'غير مصرح لك بالوصول'], 403);
-        }
 
         $session = Session::with(['coach:id,full_name,email', 'hall', 'bookings.user'])->find($id);
 

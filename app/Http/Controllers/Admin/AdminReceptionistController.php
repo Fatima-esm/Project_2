@@ -73,7 +73,6 @@ class AdminReceptionistController extends Controller
             return response()->json(['message' => $allErrors], 422);
         }
 
-        // إنشاء المستخدم
         $user = User::create([
             'full_name'         => $request->full_name,
             'email'             => $request->email,
@@ -85,14 +84,12 @@ class AdminReceptionistController extends Controller
             'membership_number' => 'REC-' . mt_rand(10000, 99999),
         ]);
 
-        // حفظ الراتب مع تمرير حقل month (الشهر الحالي أو السنة والشهر) لتجنب خطأ قاعدة البيانات
         $user->salaries()->create([
             'base_salary' => $request->salary,
             'net_salary'  => $request->salary,
-            'month'       => now()->format('Y-m'), // أو يمكنك جعلها date('F') أو أي قيمة نصية تعبر عن الشهر
+            'month'       => now()->format('Y-m'), 
         ]);
 
-        // حفظ جدول العمل المرتبط بموظف الاستقبال
         $user->workSchedules()->create([
             'days'       => $request->days,
             'work_name'  => $request->work_name,
@@ -114,7 +111,6 @@ class AdminReceptionistController extends Controller
         ], 201);
     } 
     
-    // تعديل بيانات موظف استقبال محدد بواسطة الأدمن
     public function update(Request $request, $id): \Illuminate\Http\JsonResponse
      {
         $admin = auth()->user();
@@ -122,7 +118,6 @@ class AdminReceptionistController extends Controller
             return response()->json(['message' => 'غير مصرح لك، هذه الصلاحية للأدمن أو موظف الاستقبال فقط'], 403);
         }
 
-        // البحث عن موظف الاستقبال والتأكد من دوره
         $user = User::where('role', 'reception')->find($id);
         if (!$user) {
             return response()->json(['message' => 'موظف الاستقبال غير موجود'], 404);
@@ -132,6 +127,7 @@ class AdminReceptionistController extends Controller
             'full_name'  => ['sometimes', 'required', 'string', 'max:50'],
             'email'     => ['sometimes', 'required', 'email:rfc,dns', 'max:50', 'unique:users,email,' . $id],
             'phone'     => ['sometimes', 'required', 'string', 'regex:/^963[0-9]{9}$/', 'unique:users,phone,' . $id],
+            'status'    => ['sometimes', 'required', 'in:active,rejected,banned,on_leave'],
             'password'  => ['nullable', 'string', 'min:8', 'confirmed'],
             'salary'    => ['sometimes', 'required', 'numeric', 'min:0'],
             'days'      => ['sometimes', 'required', 'string'],
@@ -154,18 +150,19 @@ class AdminReceptionistController extends Controller
             return response()->json(['message' => $allErrors], 422);
         }
 
-        // تحديث البيانات الأساسية للمستخدم
         $updateData = [];
         if ($request->has('full_name')) $updateData['full_name'] = $request->full_name;
         if ($request->has('email')) $updateData['email'] = $request->email;
         if ($request->has('phone')) $updateData['phone'] = $request->phone;
+        if ($request->has('status')) {
+            $updateData['status'] = $request->status;
+            $updateData['active_at'] = ($request->status === 'active') ? 1 : 0;}
         if ($request->filled('password')) $updateData['password'] = Hash::make($request->password);
 
         if (!empty($updateData)) {
             $user->update($updateData);
         }
 
-        // تحديث أو إنشاء الراتب (آخر سجل راتب أو إنشاء واحد جديد)
         if ($request->has('salary')) {
             $latestSalary = $user->salaries()->latest()->first();
             if ($latestSalary) {
@@ -182,7 +179,6 @@ class AdminReceptionistController extends Controller
             }
         }
 
-        // تحديث أو إنشاء جدول العمل
         if ($request->hasAny(['days', 'work_name', 'start_time', 'end_time'])) {
             $schedule = $user->workSchedules()->first();
             $scheduleData = [
@@ -199,7 +195,6 @@ class AdminReceptionistController extends Controller
             }
         }
 
-        // إعادة تحميل العلاقات لإرجاعها في الاستجابة
         $user->load(['workSchedules', 'salaries']);
 
         return response()->json([
@@ -210,7 +205,6 @@ class AdminReceptionistController extends Controller
         ], 200);
     }
 
-    // 3. حذف موظف استقبال
     public function destroy($id): \Illuminate\Http\JsonResponse
     {
         $admin = auth()->user();
@@ -218,24 +212,20 @@ class AdminReceptionistController extends Controller
             return response()->json(['message' => 'غير مصرح لك، هذه الصلاحية للأدمن أو موظف الاستقبال فقط'], 403);
         }
 
-        // البحث عن موظف الاستقبال
         $user = User::where('role', 'reception')->find($id);
         if (!$user) {
             return response()->json(['message' => 'موظف الاستقبال غير موجود'], 404);
         }
 
-        // 1. حذف السجلات المرتبطة أولاً
         $user->salaries()->delete();
         $user->workSchedules()->delete();
 
-        // 2. تعديل البريد الإلكتروني ورقم الهاتف لكي لا يتعارض مع قيود الـ Unique عند التسجيل الجديد
         $user->update([
             'email' => 'deleted_' . $user->id . '_' . $user->email,
             'phone' => 'deleted_' . $user->id . '_' . $user->phone,
         ]);
 
-        // 3. الحذف النهائي للمستخدم
-        $user->delete(); // أو $user->forceDelete(); إذا كنت تستخدم SoftDeletes
+        $user->delete(); 
 
         return response()->json([
             'status'  => 200,
@@ -243,7 +233,6 @@ class AdminReceptionistController extends Controller
         ], 200);
     }      
 
-    // 4. عرض قائمة موظفي الاستقبال مع البحث والفلترة وجلب العلاقات
     public function index(Request $request)
     {
         $admin = auth()->user();
@@ -251,22 +240,19 @@ class AdminReceptionistController extends Controller
             return response()->json(['message' => 'غير مصرح لك، هذه الصلاحية للأدمن فقط'], 403);
         }
 
-        // 1. نبدأ بإنشاء الـ Query الأساسية مع جلب العلاقات وتحديد الدور
         $query = User::where('role', 'reception')
             ->with(['workSchedules', 'salaries']);
 
-        // 2. تطبيق البحث والفلترة بشكل صحيح قبل جلب البيانات
         if ($request->has('search') && !empty($request->input('search'))) {
             $search = $request->input('search');
             $query->where(function($q) use ($search) {
                 $q->where('full_name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%")
                   ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('membership_number', 'like', "%{$search}%"); // أضفنا البحث برقم العضوية أيضاً ليكون أشمل
+                  ->orWhere('membership_number', 'like', "%{$search}%"); 
             });
         }
 
-        // 3. جلب النتائج بعد تطبيق الفلترة ثم تخصيص شكل البيانات
         $receptions = $query->get()->map(function ($reception) {
             $schedules = $reception->workSchedules->map(function ($schedule) {
                 return [
@@ -292,7 +278,6 @@ class AdminReceptionistController extends Controller
             ];
         });
 
-        // رسالة توضيحية في حال كانت القائمة فارغة نتيجة البحث أو لعدم وجود موظفين
         $message = $receptions->isEmpty() 
             ? 'لا توجد نتائج مطابقة للبحث أو لا يوجد موظفون' 
             : 'تم جلب قائمة موظفي الاستقبال بنجاح';
@@ -304,7 +289,6 @@ class AdminReceptionistController extends Controller
         ]);
     }
 
-    // 5. عرض تفاصيل موظف استقبال محدد مع جدول العمل والراتب
     public function show($id)
     {
         $admin = auth()->user();
@@ -312,7 +296,6 @@ class AdminReceptionistController extends Controller
             return response()->json(['message' => 'غير مصرح لك، هذه الصلاحية للأدمن فقط'], 403);
         }
 
-        // جلب الموظف مع جدول عمله ورواتبه
         $receptionist = User::where('role', 'reception')
             ->with(['workSchedules', 'salaries'])
             ->find($id);
@@ -321,7 +304,6 @@ class AdminReceptionistController extends Controller
             return response()->json(['message' => 'موظف الاستقبال غير موجود'], 404);
         }
 
-        // تنسيق أيام العمل
         $schedules = $receptionist->workSchedules->map(function ($schedule) {
             return [
                 'days' => $schedule->days,
@@ -331,7 +313,6 @@ class AdminReceptionistController extends Controller
             ];
         });
 
-        // جلب آخر راتب
         $latestSalary = $receptionist->salaries()->latest()->first();
         $salaryValue = $latestSalary ? $latestSalary->net_salary : 0.00;
 
@@ -367,7 +348,6 @@ class AdminReceptionistController extends Controller
             return response()->json(['message' => 'موظف الاستقبال غير موجود'], 404);
         }
 
-        // استخدام all() لتغطية الـ Body والـ Query Parameters
         $validator = Validator::make($request->all(), [
             'status' => ['required', 'in:active,rejected,banned,on_leave'],
         ], [
@@ -382,7 +362,6 @@ class AdminReceptionistController extends Controller
 
         $receptionist->status = $request->status;
         
-        // ربط حقل active_at بالحالة لتتوافق مع بقية النظام لديك
         $receptionist->active_at = ($request->status === 'active') ? 1 : 0;
         $receptionist->save();
 
@@ -406,7 +385,6 @@ class AdminReceptionistController extends Controller
 
         $query = ActivityLog::where('user_id', $id)->latest();
 
-        // فلترة بالتاريخ (اختياري)
         if ($request->filled('date')) {
             $query->whereDate('created_at', $request->date);
         }
@@ -429,7 +407,6 @@ class AdminReceptionistController extends Controller
         ]);
     }
 
-    // 1. عرض الاشتراكات التي أنشأها موظف الاستقبال اعتماداً على سجل النشاطات (Activity Log)
     public function receptionistSubscriptions(Request $request, $id): \Illuminate\Http\JsonResponse
     {
         $admin = auth()->user();
@@ -442,7 +419,6 @@ class AdminReceptionistController extends Controller
             return response()->json(['message' => 'موظف الاستقبال غير موجود'], 404);
         }
 
-        // جلب معرفات الاشتراكات المرتبطة بهذا الموظف من جدول activity_logs
         $subscriptionIds = ActivityLog::where('user_id', $id)
             ->where('subject_type', Subscription::class)
             ->pluck('subject_id')
@@ -450,18 +426,15 @@ class AdminReceptionistController extends Controller
 
         $query = Subscription::whereIn('id', $subscriptionIds);
 
-        // فلترة التاريخ (من - إلى)
         if ($request->filled('from_date') && $request->filled('to_date')) {
             $query->whereBetween('created_at', [$request->from_date, $request->to_date]);
         }
 
-        // حساب الإحصائيات
         $totalNewSubscriptions = (clone $query)->count();
         $totalSales = (clone $query)->sum('price'); 
 
         $subscriptions = $query->latest()->paginate(10);
 
-        // تنسيق البيانات لتتطابق مع واجهة الفرونت إند
         $formattedSubscriptions = collect($subscriptions->items())->map(function ($sub) {
             return [
                 'id' => $sub->id,
@@ -489,7 +462,6 @@ class AdminReceptionistController extends Controller
         ], 200);
     }
 
-    // 2. عرض ملخص نشاطات موظف الاستقبال (المبيعات والاشتراكات وآخر دخول) عبر جدول النشاطات المخصص
     public function receptionistSummary(Request $request, $id): \Illuminate\Http\JsonResponse
     {
         $admin = auth()->user();
@@ -505,7 +477,6 @@ class AdminReceptionistController extends Controller
         $fromDate = $request->input('from_date', now()->startOfMonth());
         $toDate = $request->input('to_date', now()->endOfMonth());
 
-        // جلب معرفات الاشتراكات المرتبطة بالموظف من جدول النشاطات
         $subscriptionIds = ActivityLog::where('user_id', $id)
             ->where('subject_type', Subscription::class)
             ->pluck('subject_id')
@@ -517,7 +488,6 @@ class AdminReceptionistController extends Controller
         $totalSales = (clone $subQuery)->sum('price');
         $newSubscriptionsCount = (clone $subQuery)->count();
 
-        // جلب آخر دخول للموظف من جدول النشاطات (البحث عن حركة تسجيل الدخول أو أحدث نشاط)
         $lastLogin = ActivityLog::where('user_id', $id)
             ->where(function($q) {
                 $q->where('action', 'like', '%login%')
@@ -526,7 +496,6 @@ class AdminReceptionistController extends Controller
             ->latest()
             ->value('created_at');
 
-        // إذا لم يوجد سجل دخول مصنف بكلمة دخول، نأخذ آخر نشاط تم تسجيله له
         if (!$lastLogin) {
             $lastLogin = ActivityLog::where('user_id', $id)->latest()->value('created_at');
         }
@@ -559,15 +528,6 @@ class AdminReceptionistController extends Controller
     }
 
 
-
-
-
-
-
-
-
-
-    // 7. عرض سجل نشاطات موظف الاستقبال (تتبع العمليات والعمل)
     public function activityLog($id)
     {
         $admin = auth()->user();
@@ -581,7 +541,6 @@ class AdminReceptionistController extends Controller
             return response()->json(['message' => 'موظف الاستقبال غير موجود'], 404);
         }
 
-        // جلب النشاطات المرتبطة بهذا المستخدم مباشرة
         $activities = \Spatie\Activitylog\Models\Activity::causedBy($receptionist)
             ->latest()
             ->paginate(10);
@@ -611,35 +570,31 @@ class AdminReceptionistController extends Controller
             ->latest()
             ->get()
             ->map(function ($activity) {
-                // فك الـ properties بلطف
                 $properties = is_string($activity->properties) 
                     ? json_decode($activity->properties, true) 
                     : $activity->properties;
 
-                // استخراج البيانات الفعلية سواء كانت عبر Spatie أو عبر رسالة مخصصة
                 $rawAttributes = $properties['attributes'] ?? $properties;
 
-                // توحيد شكل بيانات العنصر المستهدف (مثل الاسم أو البريد بغض النظر عن نوع الحدث)
                 $targetName = $rawAttributes['full_name'] ?? $rawAttributes['name'] ?? null;
                 $targetEmail = $rawAttributes['email'] ?? null;
 
-                // توحيد نص ووصف الحدث ليكون مفهوماً للفرونت
                 $title = match ($activity->description) {
                     'created' => 'إضافة سجل جديد',
                     'updated' => 'تعديل بيانات',
                     'deleted' => 'حذف سجل',
-                    default   => $activity->description, // النصوص المخصصة مثل "تم إنشاء حساب جديد"
+                    default   => $activity->description, 
                 };
 
                 return [
                     'id'          => $activity->id,
-                    'title'       => $title,                            // عنوان ثابت ومفهوم
-                    'log_name'    => $activity->log_name ?? 'general',  // تصنيف الحدث (auth, reception, sales...)
-                    'target_summary' => [                               // كائن ثابت يريح الفرونت في العرض
+                    'title'       => $title,                            
+                    'log_name'    => $activity->log_name ?? 'general',  
+                    'target_summary' => [                               
                         'name'  => $targetName,
                         'email' => $targetEmail,
                     ],
-                    'details'     => $rawAttributes,                    // التفاصيل الكاملة لمن أراد التوسع
+                    'details'     => $rawAttributes,                   
                     'date'        => $activity->created_at->format('Y-m-d H:i:s'),
                 ];
             });

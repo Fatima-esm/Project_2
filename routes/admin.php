@@ -72,6 +72,10 @@ use Illuminate\Support\Facades\Route;
         Route::get('/events', [EventController::class, 'eventsIndex']);
         Route::get('/events/{id}/details', [EventController::class, 'showEvent']);
 
+        //session
+        Route::get('admin/sessions/statistics', [AdminSessionController::class, 'statistics']); 
+        Route::get('admin/sessions/', [AdminSessionController::class, 'indexSessions']);           
+        Route::get('admin/sessions/{id}', [AdminSessionController::class, 'showSession']);    
 
     });
 
@@ -102,31 +106,28 @@ use Illuminate\Support\Facades\Route;
         // ادارة  الموظفين
         Route::middleware(['auth:sanctum'])->prefix('admin/receptionists')->group(function () {
             Route::get('/statistics', [AdminReceptionistController::class, 'staticsData']);
-            Route::get('/', [AdminReceptionistController::class, 'index']);          // عرض كل موظفي الاستقبال (مع بحث و Paginate)
-            Route::post('/', [AdminReceptionistController::class, 'store']);         // إضافة موظف استقبال جديد
-            Route::get('/{id}', [AdminReceptionistController::class, 'show']);       // عرض تفاصيل موظف استقبال محدد
-            Route::put('/{id}', [AdminReceptionistController::class, 'update']);     // تعديل بيانات موظف استقبال
-            Route::delete('/{id}', [AdminReceptionistController::class, 'destroy']); // حذف موظف استقبال
-            Route::post('/{id}/status', [AdminReceptionistController::class, 'toggleStatus']); // تفعيل أو حظر حساب موظف الاستقبال
-            Route::get('/{id}/activity-logs', [AdminReceptionistController::class, 'activity']); // عرض سجل نشاطات موظف الاستقبال
+            Route::get('/', [AdminReceptionistController::class, 'index']);          
+            Route::post('/', [AdminReceptionistController::class, 'store']);         
+            Route::get('/{id}', [AdminReceptionistController::class, 'show']);       
+            Route::put('/{id}', [AdminReceptionistController::class, 'update']);     
+            Route::delete('/{id}', [AdminReceptionistController::class, 'destroy']); 
+            Route::post('/{id}/status', [AdminReceptionistController::class, 'toggleStatus']); 
+            Route::get('/{id}/activity-logs', [AdminReceptionistController::class, 'activity']); 
             Route::get('/{id}/subscriptions', [AdminReceptionistController::class, 'receptionistSubscriptions']);
             Route::get('/{id}/summary', [AdminReceptionistController::class, 'receptionistSummary']);
         });
 
         Route::middleware(['auth:sanctum'])->prefix('admin/sessions')->group(function () {
-            Route::get('/', [AdminSessionController::class, 'indexSessions']);           // عرض وفلترة الكل
-            Route::post('/', [AdminSessionController::class, 'storeSession']);          // إضافة جلسة جديدة
-            Route::get('/statistics', [AdminSessionController::class, 'statistics']); // الإحصائيات العامة
-            Route::get('/{id}', [AdminSessionController::class, 'showSession']);        // تفاصيل جلسة محددة
-            Route::post('/{id}/update', [AdminSessionController::class, 'updateSession']);      // تعديل جلسة
-            Route::post('/{id}/cancel', [AdminSessionController::class, 'cancelSession']); // إلغاء جلسة
+            Route::post('/', [AdminSessionController::class, 'storeSession']);          
+            Route::post('/{id}/update', [AdminSessionController::class, 'updateSession']);      
+            Route::post('/{id}/cancel', [AdminSessionController::class, 'cancelSession']); 
         });
          
 
         // معالجة طلبات الكوتش للتوظيف بالنادي
         Route::get('coaches/pending', [ManagementCoachController::class, 'getPendingCoaches']);
-        Route::post('coaches/{id}/update-status', [ManagementCoachController::class, 'updateCoachStatus']); //قبول أو رفض طلبات الكوتش
-        Route::get('coaches/rejected', [ManagementCoachController::class, 'getRejectedCoaches']);        // عرض المدربين المرفوضين
+        Route::post('coaches/{id}/update-status', [ManagementCoachController::class, 'updateCoachStatus']); 
+        Route::get('coaches/rejected', [ManagementCoachController::class, 'getRejectedCoaches']);        
         Route::post('coaches/{id}/reactivate', [ManagementCoachController::class, 'reactivateCoach']);
 
         Route::get('coaches/sent-emails', [EmailController::class, 'sentEmails']);
@@ -134,7 +135,7 @@ use Illuminate\Support\Facades\Route;
         Route::post('/coaches/{id}/send-email', [EmailController::class, 'sendEmailToCoach']);
         Route::post('/admin/send-email/user', [EmailController::class, 'sendEmailToUser']);
 
-        Route::get('/coach/{id}/trainees', [ManagementCoachController::class, 'getTraineesByCoach']);  // عرض المتدربين التابعين لكوتش معين
+        Route::get('/coach/{id}/trainees', [ManagementCoachController::class, 'getTraineesByCoach']);  
     
         // تعيين راتب جماعي للكوتش أو الاستقبال بناءً على خطة العمل والدور والشهر
         Route::post('/coach/salaries', [SalaryController::class, 'storeOrUpdateSalary']);
@@ -153,7 +154,7 @@ use Illuminate\Support\Facades\Route;
         Route::post('/admin/club/details', [ClubActivityController::class, 'updateClubDetails']);
         // خدمات
         Route::post('/services', [ClubActivityController::class, 'servicesStore']);
-        Route::post('/services/{id}/update', [ClubActivityController::class, 'servicesUpdate']); // أو PUT
+        Route::post('/services/{id}/update', [ClubActivityController::class, 'servicesUpdate']); 
         Route::delete('/services/{id}/delete', [ClubActivityController::class, 'servicesDestroy']);
         // فعاليات
         Route::post('/events', [EventController::class, 'eventsStore']);

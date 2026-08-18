@@ -37,7 +37,7 @@ class ProfileController extends Controller
             'age'           => 'sometimes|integer|min:12|max:90',
             'email'         => 'sometimes|email:rfc,dns|unique:users,email,' . $user->id,
             'gender'        => 'sometimes|string|in:male,female,ذكر,أنثى,انثى,رجل,امرأة',
-            'profile_image' => 'sometimes|image|mimes:jpeg,png,jpg|max:4096', // رفع صورة      ]);
+            'profile_image' => 'sometimes|image|mimes:jpeg,png,jpg|max:4096', 
         ], [
             'email.email' => 'البريد الإلكتروني غير صالح',
             'email.unique' => 'البريد الإلكتروني مستخدم من قبل',
@@ -49,7 +49,7 @@ class ProfileController extends Controller
                 'required',
                 'string',
                 'unique:users,phone,' . $user->id,
-                'regex:/^9639[0-9]{8}$/' // تمرير الـ regex داخل مصفوفة يمنع حدوث خطأ الـ modifiers تماماً
+                'regex:/^9639[0-9]{8}$/' 
             ],], [
                 'phone.regex'  => 'رقم الهاتف يجب أن يكون بصيغة الرقم السوري الصحيحة ويبدأ بـ 9639 ويتكون من 12 رقماً.',
                 'phone.unique' => 'رقم الهاتف مستخدم من قبل شخص آخر.',
@@ -108,7 +108,6 @@ class ProfileController extends Controller
 
         $user = User::find($request->user_id);
 
-        // حماية بسيطة: لا تسمح بتعديل حسابات الأدمن أو الكوتش بهذه الطريقة
         if (in_array($user->role, ['admin', 'reception'])) {
             return response()->json([
                 'message' => 'غير مسموح'
@@ -133,12 +132,10 @@ class ProfileController extends Controller
         }
     }
 
-    // عرض هدف المتدرب الحالي بعد تسجيل الدخول
     public function getGoal(Request $request)
     {
         $user = $request->user();
 
-        // تحميل علاقة الهدف الخاصة بالمستخدم
         $user->load('goal');
 
         return response()->json([
@@ -154,7 +151,6 @@ class ProfileController extends Controller
     }
 
     //..............................................................تم
-    //عرض القياسات
     public function getMeasurements(Request $request)
     {
         $measurements = $request->user()->measurements()->first();
@@ -166,7 +162,6 @@ class ProfileController extends Controller
         ], 200);
     }
  
-    //تعديل او اضافة قياسات وتحديث العمر والجنس للمستخدم
     public function addMeasurement(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -185,7 +180,6 @@ class ProfileController extends Controller
         ]);
 
         if ($validator->fails()) {
-            // دمج جميع رسائل الأخطاء في نص واحد يفصل بينها مسافة أو فاصلة
             $allErrors = collect($validator->errors()->all())->implode(' - ');
             return response()->json(['message' => $allErrors], 422);
         }
@@ -196,13 +190,11 @@ class ProfileController extends Controller
             return response()->json(['message' => 'غير مسموح'], 403);
         }
 
-        // 1. تحديث العمر والجنس في جدول الـ users
         $user->update([
             'age'    => $request->age,
             'gender' => $request->gender,
         ]);
 
-        // 2. إنشاء سجل القياسات الجديد في جدول الـ measurements
         $measurement = Measurement::create([
             'user_id'           => $user->id,
             'height'            => $request->height,
@@ -229,12 +221,10 @@ class ProfileController extends Controller
         ], 201);
     }
 
-    // تعديل القياسات وتحديث العمر والجنس للمستخدم الحالي عبر التوكن تلقائياً (آخر قياس)
     public function updateMeasurements(Request $request)
     {
         $user = $request->user();
 
-        // حماية إضافية
         if (in_array($user->role, ['admin', 'reception'])) {
             return response()->json(['message' => 'غير مسموح'], 403);
         }
@@ -252,7 +242,6 @@ class ProfileController extends Controller
             return response()->json(['message' => $allErrors], 422);
         }
 
-        // 1. جلب أحدث سجل قياسات خاص بهذا المستخدم تلقائياً
         $measurement = Measurement::where('user_id', $user->id)
             ->latest()
             ->first();
@@ -261,7 +250,6 @@ class ProfileController extends Controller
             return response()->json(['message' => 'لا يوجد سجل قياسات سابق لتعديله، قم بإضافة قياس جديد أولاً'], 404);
         }
 
-        // 3. تحديث سجل القياسات الموجود بالبيانات الجديدة
         $measurement->update($request->only([
             'height', 
             'weight', 
@@ -282,7 +270,6 @@ class ProfileController extends Controller
         ], 200);
     }
 
-    //تاريخ القياسات بدءا من الاحدث لاجل الرسم البياني
     public function getHistory(Request $request)
     {
         $history = $request->user()->measurements()->orderBy('created_at', 'desc')->get();
@@ -298,15 +285,12 @@ class ProfileController extends Controller
     $user = $request->user();
     $qrData = "Member: " . $user->full_name . " | ID: " . $user->id;
 
-    // توليد QR بصيغة SVG (نصي) لا يحتاج مكتبات صور
     $svg = QrCode::format('svg')->size(300)->generate($qrData);
     
-    // تحويل الـ SVG إلى Base64
     $qrBase64 = base64_encode($svg);
                         
     return response()->json([
         'status' => 200,
-        // تغيير الصيغة إلى svg+xml
         'qr_code' => 'data:image/svg+xml;base64,' . $qrBase64,
         'member_info' => [
             'name' => $user->full_name,

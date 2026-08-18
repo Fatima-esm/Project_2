@@ -26,7 +26,7 @@ class SalaryController extends Controller
             'base_salary' => 'nullable|numeric|min:0',
             'bonus'       => 'nullable|numeric|min:0',
             'deduction'   => 'nullable|numeric|min:0',
-            'month'       => 'nullable|string|max:7', // اختيارياً، إذا لم يُرسل يتم أخذ الشهر الحالي تلقائياً
+            'month'       => 'nullable|string|max:7', 
             'status'      => 'nullable|in:pending,paid',
             'notes'       => 'nullable|string|max:500', 
         ]);
@@ -40,7 +40,6 @@ class SalaryController extends Controller
             return response()->json(['message' => 'لا يمكن إضافة راتب للمتدربين'], 400);
         }
 
-        // تحديد الشهر تلقائياً للشهر الحالي إذا لم يتم إرساله في الطلب
         $month = $request->month ?? Carbon::now()->format('Y-m');
 
         $existingSalary = Salary::where('user_id', $request->user_id)
@@ -132,10 +131,8 @@ class SalaryController extends Controller
         
         $month = Carbon::now()->format('Y-m'); 
 
-        // 1. جلب تفاصيل خطة العمل (Work Schedule) من الجدول الخاص بها
         $workSchedule = WorkSchedule::find($workScheduleId);
 
-        // 2. جلب المستخدمين المطابقين للدور والمرتبطين بجدول العمل
         $employees = User::where('role', $role)
                          ->whereHas('schedules', function ($query) use ($workScheduleId) {
                              $query->where('work_schedule_id', $workScheduleId);
@@ -150,10 +147,9 @@ class SalaryController extends Controller
         }
 
         $updatedCount = 0;
-        $affectedUsersList = []; // مصفوفة لتخزين تفاصيل المستخدمين (الاسم والـ ID)
-
+        $affectedUsersList = []; 
         foreach ($employees as $employee) {
-            // التحقق مما إذا كان السجل موجوداً مسبقاً للحفاظ على حالته أو ضبطه كـ pending إذا كان جديداً
+            
             $existingSalary = Salary::where('user_id', $employee->id)
                                     ->where('month', $month)
                                     ->first();
@@ -168,12 +164,11 @@ class SalaryController extends Controller
                 [
                     'base_salary' => $monthlySalary,
                     'net_salary'  => \DB::raw("base_salary + bonus - deduction"), 
-                    'status'      => $status, // إبقاء الحالة السابقة أو تعيينها كـ 'pending' افتراضياً للسجلات الجديدة
+                    'status'      => $status,
                     'notes'       => "تم تحديث الراتب الأساسي بناءً على خطة العمل رقم: {$workScheduleId}",
                 ]
             );
 
-            // إضافة تفاصيل المستخدم للقائمة
             $affectedUsersList[] = [
                 'id'        => $employee->id,
                 'full_name' => $employee->full_name,
@@ -189,7 +184,6 @@ class SalaryController extends Controller
             'data'    => [
                 'monthly_salary'   => $monthlySalary,
                 'month'            => $month,
-                // تفاصيل خطة العمل
                 'work_schedule_details' => [
                     'id'         => $workSchedule->id,
                     'days'       => $workSchedule->days,
@@ -197,14 +191,12 @@ class SalaryController extends Controller
                     'start_time' => $workSchedule->start_time,
                     'end_time'   => $workSchedule->end_time,
                 ],
-                // قائمة بأسماء وأرقام المستخدمين الذين تم تطبيق الراتب عليهم
                 'affected_users_count' => $updatedCount,
                 'users'                => $affectedUsersList,
             ]
         ], 200);
     }
 
-    // إتمام دفع الراتب لموظف أو كوتش معين وتحديد طريقة الدفع
     public function paySalary(Request $request, $salaryId)
     {
         $admin = auth()->user();
@@ -213,8 +205,8 @@ class SalaryController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'payment_method' => 'required|string|max:100', // طريقة الدفع (نقداً، تحويل بنكي، بطاقة، إلخ)
-            'notes'          => 'nullable|string|max:500',  // ملاحظات إضافية عملية الدفع
+            'payment_method' => 'required|string|max:100', 
+            'notes'          => 'nullable|string|max:500',  
         ]);
 
         if ($validator->fails()) {
@@ -226,16 +218,14 @@ class SalaryController extends Controller
             return response()->json(['status' => 404, 'message' => 'سجل الراتب غير موجود'], 404);
         }
 
-        // التحقق مما إذا كان الراتب مدفوعاً مسبقاً
         if ($salaryRecord->status === 'paid') {
             return response()->json(['status' => 400, 'message' => 'هذا الراتب تم دفعُه مسبقاً بالفعل'], 400);
         }
 
-        // تحديث حالة الراتب إلى مدفوع، وتحديد طريقة الدفع، ووقت الدفع الحالي
         $salaryRecord->update([
             'status'         => 'paid',
             'payment_method' => $request->payment_method,
-            'paid_at'        => Carbon::now(), // تاريخ ووقت عملية الدفع
+            'paid_at'        => Carbon::now(), 
             'notes'          => $request->notes ?? $salaryRecord->notes,
         ]);
 
@@ -252,8 +242,6 @@ class SalaryController extends Controller
         ], 200);
     }
 
-    //تفاصيل رواتب الموظفين أو الكوتشز بناءً على خطة العمل والدور والشهر
-    // عرض جميع الموظفين مع الفلترة حسب الدور وحالة الراتب وكافة التفاصيل المطلوبة
     public function getAllEmployeesSalaries(Request $request)
     {
         $admin = auth()->user();
@@ -262,9 +250,9 @@ class SalaryController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'role'   => 'nullable|in:coach,reception', // فلترة حسب الدور
-            'status' => 'nullable|in:pending,paid',      // فلترة حسب حالة الراتب
-            'month'  => 'nullable|string|max:7',         // فلترة اختياري لشهر معين (مثلاً "2026-08")
+            'role'   => 'nullable|in:coach,reception', 
+            'status' => 'nullable|in:pending,paid',      
+            'month'  => 'nullable|string|max:7',         
         ]);
 
         if ($validator->fails()) {
@@ -273,18 +261,16 @@ class SalaryController extends Controller
 
         $role   = $request->role;
         $status = $request->status;
-        $month  = $request->month ?? Carbon::now()->format('Y-m'); // الشهر الحالي افتراضياً
+        $month  = $request->month ?? Carbon::now()->format('Y-m'); 
 
-        // جلب المستخدمين الذين ليسوا متدربين (أي كوتش أو موظف استقبال)
         $query = User::whereIn('role', ['coach', 'reception']);
 
-        // تطبيق فلترة الدور إذا تم إرساله
         if ($role) {
             $query->where('role', $role);
         }
 
         $employees = $query->with([
-            'schedules.workSchedule', // لجلب جدول العمل المرتبط بالمستخدم
+            'schedules.workSchedule', 
             'salaries' => function ($q) use ($month, $status) {
                 $q->where('month', $month);
                 if ($status) {
@@ -296,16 +282,13 @@ class SalaryController extends Controller
         $result = [];
 
         foreach ($employees as $employee) {
-            // إذا كانت فلترة الحالة مفعلة والموظف لا يملك سجل راتب بهذا الشهر/الحالة، نتخطاه
             $salary = $employee->salaries->first();
             if ($status && !$salary) {
                 continue;
             }
 
-            // استخراج تفاصيل خطة العمل إن وجدت
             $scheduleDetails = null;
             if ($employee->schedules && $employee->schedules->isNotEmpty()) {
-                // نأخذ جدول العمل الأول المرتبط به كمثال
                 $workSchedule = $employee->schedules->first()->workSchedule;
                 if ($workSchedule) {
                     $scheduleDetails = [
@@ -329,7 +312,7 @@ class SalaryController extends Controller
                 'deduction'      => $salary->deduction ?? 0,
                 'net_salary'     => $salary->net_salary ?? 0,
                 'month'          => $month,
-                'status'         => $salary->status ?? 'pending', // افتراضياً قيد الانتظار إذا لم يتم إنشاء سجل بعد
+                'status'         => $salary->status ?? 'pending', 
                 'notes'          => $salary->notes ?? null,];
         }
 
