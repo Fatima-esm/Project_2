@@ -17,7 +17,7 @@ use App\Http\Controllers\Admin\ManagementCoachController;
 use App\Http\Controllers\Admin\EmailController;
 use App\Http\Controllers\Admin\SalaryController;
 use Illuminate\Http\Request;
-use Spatie\Permission\Traits\HasRoles;  //for role and permission
+use Spatie\Permission\Traits\HasRoles;  
 
 use App\Http\Controllers\Admin\AdminReceptionistController;
 
@@ -75,7 +75,11 @@ use Illuminate\Support\Facades\Route;
         //session
         Route::get('admin/sessions/statistics', [AdminSessionController::class, 'statistics']); 
         Route::get('admin/sessions/', [AdminSessionController::class, 'indexSessions']);           
-        Route::get('admin/sessions/{id}', [AdminSessionController::class, 'showSession']);    
+        Route::get('admin/sessions/{id}', [AdminSessionController::class, 'showSession']); 
+
+        //dashboard reception
+        Route::get('reception/dashboard', [AdminReceptionistController::class, 'dashboard']);
+
 
     });
 

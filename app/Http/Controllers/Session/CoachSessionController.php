@@ -496,45 +496,63 @@ class CoachSessionController extends Controller
             'available'    => $session->has_available_slots,
             'status'       => $session->status,
             'status_label' => $session->status_label,
-            'hall' => [
+            'hall' => $session->hall ? [
                 'id'   => $session->hall->id,
                 'name' => $session->hall->name,
                 'type' => $session->hall->type,
-            ],
+            ] : null,
             'coach_name'   => $session->coach->full_name ?? null,
         ];
-        
+
         if ($session->type === 'individual') {
-            $booking = $session->bookings->first(); // الجلسة الفردية غالباً لها حجز واحد نشط
-            $data['trainee'] = $booking && $booking->user ? [
-                'user_id' => $booking->user->id,
-                'name'    => $booking->user->full_name,
-                'email'   => $booking->user->email ?? null,
-                'status'  => $booking->status,
+            $booking = $session->bookings
+                ->whereIn('status', ['booked', 'attended', 'no_show'])
+                ->first()
+                ?? $session->bookings->first();
+
+            $user = $booking?->user;
+
+            $data['trainee'] = $user ? [
+                'user_id'    => $user->id,
+                'name'       => $user->full_name,
+                'email'      => $user->email,
+                'status'     => $booking->status,
+                'image_url'  => $user->profile_image_url
+                    ?? ($user->profile_image ? asset('storage/' . $user->profile_image) : null),
             ] : null;
         }
 
-        // إذا طُلب العرض التفصيلي (داخل دالة show)، يتم جلب قائمة المتدربين مع حالتهم ووقت الحضور
         if ($detailed) {
-            $data['trainees'] = $session->bookings->map(fn($b) => [
-                'booking_id'   => $b->id,
-                'user_id'      => $b->user_id,
-                'name'         => $b->user->full_name ?? 'مستخدم غير معروف',
-                'email'        => $b->user->email ?? null,
-                'status'       => $b->status,
-                'status_label' => match ($b->status) {
-                    'booked'    => 'محجوز',
-                    'attended'  => 'حضر',
-                    'cancelled' => 'ملغي',
-                    'no_show'   => 'لم يحضر',
-                    default     => $b->status,
-                },
-                'attended_at'  => $b->attended_at ? $b->attended_at->format('Y-m-d H:i:s') : null,
-            ]);
+            $data['trainees'] = $session->bookings->map(function ($b) {
+                $user = $b->user;
+
+                return [
+                    'booking_id'   => $b->id,
+                    'user_id'      => $b->user_id,
+                    'name'         => $user->full_name ?? 'مستخدم غير معروف',
+                    'email'        => $user->email ?? null,
+                    'status'       => $b->status,
+                    'status_label' => match ($b->status) {
+                        'booked'    => 'محجوز',
+                        'attended'  => 'حضر',
+                        'cancelled' => 'ملغي',
+                        'no_show'   => 'لم يحضر',
+                        default     => $b->status,
+                    },
+                    'attended_at'  => $b->attended_at
+                        ? $b->attended_at->format('Y-m-d H:i:s')
+                        : null,
+                    'image_url'    => $user
+                        ? ($user->profile_image_url
+                            ?? ($user->profile_image
+                                ? asset('storage/' . $user->profile_image)
+                                : null))
+                        : null,
+                ];
+            })->values();
         }
 
         return $data;
-    }
-    
+    }    
     
     }

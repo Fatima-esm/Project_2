@@ -7,6 +7,10 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Salary;
 use App\Models\Sale;
+use App\Models\Session;
+use App\Models\StaffAttendance;
+use App\Models\Product;
+
 use App\Models\Subscription;
 use App\Models\Attendance;
 use Illuminate\Support\Facades\Hash;
@@ -606,6 +610,337 @@ class AdminReceptionistController extends Controller
             'total_activities'  => $activities->count(),
             'activities'        => $activities
         ], 200);
+    }
+
+    public function dashboard()
+    {
+        $reception = auth()->user();
+
+        if (!in_array($reception->role, ['admin', 'reception'])) {
+            return response()->json([
+                'status'  => 403,
+                'message' => 'غير مصرح',
+            ], 403);
+        }
+
+        $today = now()->toDateString();
+
+        if (method_exists(Session::class, 'updateExpiredSessions')) {
+            Session::updateExpiredSessions();
+        }
+
+        $membersCount = User::where('role', 'trainee')
+            ->where('status', 'active')
+            ->count();
+
+        $todaySessionsCount = Session::whereDate('session_date', $today)
+            ->where('status', '!=', 'cancelled')
+            ->count();
+
+        $upcomingSessionsCount = Session::whereDate('session_date', $today)
+            ->where('status', 'scheduled')
+            ->count();
+
+        $expiredSubscriptionsCount = Subscription::where('status', 'paid')
+            ->whereDate('expires_at', '<', $today)
+            ->count();
+
+        $expiringSubscriptionsCount = Subscription::where('status', 'paid')
+            ->whereDate('expires_at', '>=', $today)
+            ->whereDate('expires_at', '<=', now()->addDays(7)->toDateString())
+            ->count();
+
+            //sales in today
+            $todaySalesData = Sale::whereDate('created_at', $today)
+            ->selectRaw('COALESCE(SUM(total_amount), 0) as total_sum, COUNT(id) as total_count')
+            ->first();
+
+        $todaySales      = (float) ($todaySalesData->total_sum ?? 0);
+        $todaySalesCount = (int) ($todaySalesData->total_count ?? 0);
+
+        $coaches = User::where('role', 'coach')
+            ->where('status', 'active')
+            ->where('active_at', 1)
+            ->get(['id', 'full_name', 'membership_number', 'profile_image']);
+
+        $coachesTotal = $coaches->count();
+
+        $latestAttendances = StaffAttendance::whereIn('user_id', $coaches->pluck('id'))
+            ->whereDate('recorded_at', $today)
+            ->orderByDesc('recorded_at')
+            ->get()
+            ->unique('user_id')
+            ->keyBy('user_id');
+
+        $coachesPresent = 0;
+
+        $coachAttendance = $coaches->map(function ($coach) use ($latestAttendances, &$coachesPresent) {
+            $last = $latestAttendances->get($coach->id);
+            $isPresent = $last && $last->type === 'check_in';
+
+            if ($isPresent) {
+                $coachesPresent++;
+            }
+
+            return [
+                'coach_id'           => $coach->id,
+                'name'               => $coach->full_name,
+                'membership_number'  => $coach->membership_number,
+                'image'              => $coach->profile_image_url
+                    ?? ($coach->profile_image ? asset('storage/' . $coach->profile_image) : null),
+                'status'             => $isPresent ? 'present' : 'absent',
+                'status_label'       => $isPresent ? 'حاضر' : 'غير حاضر',
+                'last_action'        => $last?->type,
+                'last_action_label'  => $last
+                    ? ($last->type === 'check_in' ? 'دخول' : 'خروج')
+                    : null,
+                'last_time'          => $last?->recorded_at?->format('H:i'),
+                'note'               => $last?->note,
+            ];
+        })->values();
+
+        $todaySessions = Session::with([
+                'coach:id,full_name,profile_image',
+                'hall:id,name,type',
+            ])
+            ->withCount(['bookings as booked_count' => function ($q) {
+                $q->whereIn('status', ['booked', 'attended']);
+            }])
+            ->whereDate('session_date', $today)
+            ->where('status', '!=', 'cancelled')
+            ->orderBy('start_time')
+            ->get()
+            ->map(function ($session) {
+                return [
+                    'id'            => $session->id,
+                    'title'         => $session->title,
+                    'type'          => $session->type,
+                    'type_label'    => $session->type === 'group' ? 'جماعية' : 'فردية',
+                    'start_time'    => substr((string) $session->start_time, 0, 5),
+                    'end_time'      => substr((string) $session->end_time, 0, 5),
+                    'status'        => $session->status,
+                    'status_label'  => $session->status_label ?? $session->status,
+                    'capacity'      => $session->capacity,
+                    'booked_count'  => $session->booked_count ?? 0,
+                    'available'     => ($session->capacity ?? 0) > ($session->booked_count ?? 0),
+                    'coach'         => $session->coach ? [
+                        'id'    => $session->coach->id,
+                        'name'  => $session->coach->full_name,
+                        'image' => $session->coach->profile_image_url
+                            ?? ($session->coach->profile_image
+                                ? asset('storage/' . $session->coach->profile_image)
+                                : null),
+                    ] : null,
+                    'hall'          => $session->hall ? [
+                        'id'   => $session->hall->id,
+                        'name' => $session->hall->name,
+                        'type' => $session->hall->type,
+                    ] : null,
+                ];
+            });
+
+    $recentSales = Sale::with([
+            'user:id,full_name,phone,membership_number',
+            'seller:id,full_name', 
+        ])
+        ->latest('created_at')
+        ->limit(10)
+        ->get()
+        ->map(function ($sale) {
+            $customerName = $sale->customer_name
+                ?? $sale->user?->full_name
+                ?? 'زائر';
+
+            $customerPhone = $sale->customer_phone
+                ?? $sale->user?->phone
+                ?? null;
+
+            $soldByName = $sale->soldBy?->full_name
+                ?? $sale->seller?->full_name
+                ?? null;
+
+            return [
+                'id'                   => $sale->id,
+                'user_id'              => $sale->user_id,
+                'customer_name'        => $customerName,
+                'customer_phone'       => $customerPhone,
+                'membership_number'    => $sale->user?->membership_number,
+                'is_member'            => (bool) $sale->user_id,
+                'total_amount'         => (float) $sale->total_amount,
+                'payment_method'       => $sale->payment_method,
+                'payment_method_label' => match ($sale->payment_method) {
+                    'cash'     => 'كاش',
+                    'online'   => 'أونلاين',
+                    'card'     => 'بطاقة',
+                    'transfer' => 'تحويل',
+                    default    => $sale->payment_method,
+                },
+                'status'               => $sale->status,
+                'status_label'         => match ($sale->status) {
+                    'completed' => 'مكتملة',
+                    'cancelled' => 'ملغاة',
+                    'refunded'  => 'مسترجعة',
+                    default     => $sale->status,
+                },
+                'sold_by'              => $soldByName,
+                'created_at'           => $sale->created_at->format('Y-m-d H:i'),
+                'time'                 => $sale->created_at->diffForHumans(),
+            ];
+        });
+
+        $mapSubscription = function ($subscription, bool $isExpired) {
+            $endDate = \Carbon\Carbon::parse($subscription->expires_at);
+
+            $item = [
+                'id'         => $subscription->id,
+                'user'       => $subscription->user ? [
+                    'id'                => $subscription->user->id,
+                    'name'              => $subscription->user->full_name,
+                    'membership_number' => $subscription->user->membership_number,
+                    'image'             => $subscription->user->profile_image_url
+                        ?? ($subscription->user->profile_image
+                            ? asset('storage/' . $subscription->user->profile_image)
+                            : null),
+                ] : null,
+                'end_date'   => $endDate->format('Y-m-d'),
+                'status'     => $isExpired ? 'expired' : 'expiring',
+                'status_label' => $isExpired ? 'منتهي' : 'ينتهي قريباً',
+            ];
+
+            if ($isExpired) {
+                $item['days_expired'] = $endDate->diffInDays(now());
+            } else {
+                $item['days_remaining'] = now()->startOfDay()->diffInDays($endDate->copy()->startOfDay());
+            }
+
+            return $item;
+        };
+
+        $expiredSubscriptions = Subscription::with('user:id,full_name,membership_number,profile_image')
+            ->where('status', 'paid')
+            ->whereDate('expires_at', '<', $today)
+            ->orderByDesc('expires_at')
+            ->limit(10)
+            ->get()
+            ->map(fn ($sub) => $mapSubscription($sub, true));
+
+        $expiringSubscriptions = Subscription::with('user:id,full_name,membership_number,profile_image')
+            ->where('status', 'paid')
+            ->whereDate('expires_at', '>=', $today)
+            ->whereDate('expires_at', '<=', now()->addDays(7)->toDateString())
+            ->orderBy('expires_at')
+            ->limit(5)
+            ->get()
+            ->map(fn ($sub) => $mapSubscription($sub, false));
+
+        $lowStockProducts = Product::where('stock_quantity', '<=', 5)
+            ->orderBy('stock_quantity')
+            ->limit(10)
+            ->get(['id', 'name', 'stock_quantity', 'price', 'image'])
+            ->map(fn ($product) => [
+                'id'          => $product->id,
+                'name'        => $product->name,
+                'stock'       => $product->stock_quantity,
+                'price'       => (float) $product->price,
+                'image'       => $product->image_url
+                    ?? ($product->image ? asset('storage/' . $product->image) : null),
+                'level'       => $product->stock_quantity <= 2 ? 'critical' : 'low',
+                'level_label' => $product->stock_quantity <= 2 ? 'مخزون حرج' : 'مخزون منخفض',
+            ]);
+
+        $labels = [
+            'coach_check_in'       => 'تسجيل دخول كوتش',
+            'coach_check_out'      => 'تسجيل خروج كوتش',
+            'sell_product'         => 'بيع منتج',
+            'product_sale'         => 'بيع منتج',
+            'renew_subscription'   => 'تجديد اشتراك',
+            'create_subscription'  => 'إنشاء اشتراك',
+            'register'             => 'تسجيل مستخدم',
+            'update_trainee'       => 'تعديل متدرب',
+            'create_user'          => 'إضافة عضو',
+            'update_user'          => 'تعديل بيانات عضو',
+            'payment'              => 'تسجيل دفعة',
+        ];
+
+        $recentActivity = ActivityLog::where('user_id', $reception->id)
+            ->latest('created_at')
+            ->limit(10)
+            ->get()
+            ->map(fn ($activity) => [
+                'id'           => $activity->id,
+                'action'       => $activity->action,
+                'action_label' => $labels[$activity->action] ?? $activity->action_label ?? 'نشاط',
+                'details'      => $activity->details,
+                'icon'         => $activity->icon ?? 'activity',
+                'created_at'   => $activity->created_at->format('Y-m-d H:i'),
+                'time'         => $activity->created_at->diffForHumans(),
+            ]);
+
+        $alerts = [];
+
+        if ($expiredSubscriptionsCount > 0) {
+            $alerts[] = [
+                'type'    => 'danger',
+                'icon'    => 'subscription',
+                'title'   => 'اشتراكات منتهية',
+                'message' => "يوجد {$expiredSubscriptionsCount} اشتراك منتهي يحتاج إلى تجديد",
+            ];
+        }
+
+        if ($expiringSubscriptionsCount > 0) {
+            $alerts[] = [
+                'type'    => 'warning',
+                'icon'    => 'warning',
+                'title'   => 'اشتراكات تنتهي قريباً',
+                'message' => "يوجد {$expiringSubscriptionsCount} اشتراك سينتهي خلال 7 أيام",
+            ];
+        }
+
+        if ($lowStockProducts->count() > 0) {
+            $alerts[] = [
+                'type'    => 'warning',
+                'icon'    => 'product',
+                'title'   => 'مخزون منخفض',
+                'message' => 'يوجد ' . $lowStockProducts->count() . ' منتجات تحتاج إلى إعادة تخزين',
+            ];
+        }
+
+        return response()->json([
+            'status' => 200,
+            'data'   => [
+                'employee' => [
+                    'id'    => $reception->id,
+                    'name'  => $reception->full_name,
+                    'role'  => $reception->role,
+                    'image' => $reception->profile_image_url
+                        ?? ($reception->profile_image
+                            ? asset('storage/' . $reception->profile_image)
+                            : null),
+                ],
+                'statistics' => [
+                    'members_count'               => $membersCount,
+                    'today_sales'                 => $todaySales,
+                    'today_sales_count'           => $todaySalesCount,
+                    'today_sessions'              => $todaySessionsCount,
+                    'upcoming_sessions'           => $upcomingSessionsCount,
+                    'expired_subscriptions'       => $expiredSubscriptionsCount,
+                    'expiring_subscriptions'      => $expiringSubscriptionsCount,
+                    'coaches_present'             => $coachesPresent,
+                    'coaches_total'               => $coachesTotal,
+                    'coach_attendance_percentage' => $coachesTotal > 0
+                        ? round(($coachesPresent / $coachesTotal) * 100)
+                        : 0,
+                ],
+                'today_sessions'          => $todaySessions,
+                'coach_attendance'        => $coachAttendance,
+                'recent_sales'            => $recentSales,
+                'expired_subscriptions'   => $expiredSubscriptions,
+                'expiring_subscriptions'  => $expiringSubscriptions,
+                'low_stock_products'      => $lowStockProducts,
+                'alerts'                  => $alerts,
+                'recent_activity'         => $recentActivity,
+            ],
+        ]);
     }
     
     }
